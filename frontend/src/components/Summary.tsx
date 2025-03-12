@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Paper, Stack, Typography } from '@mui/material';
+import { Box, Grid, Paper, Stack, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Card, CardContent } from '@mui/material';
 import { RiskState } from '../types';
 
 interface SummaryProps {
@@ -7,84 +7,124 @@ interface SummaryProps {
 }
 
 export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
+    // Helper function to get remediation strategies based on scenario
+    const getRemediationStrategies = () => {
+        const strategies = [
+            {
+                title: "Technical Controls",
+                description: "Implement advanced threat detection systems and regular security assessments to identify and address vulnerabilities proactively."
+            },
+            {
+                title: "Operational Procedures",
+                description: "Establish comprehensive incident response plans and conduct regular employee training on security awareness and best practices."
+            },
+            {
+                title: "Risk Transfer",
+                description: "Consider cyber insurance coverage and third-party security services to help mitigate potential financial impacts."
+            }
+        ];
+        return strategies;
+    };
+
     return (
-        <Stack spacing={3}>
-            <Paper sx={{ p: 3 }}>
-                <Typography variant="h5" gutterBottom>
-                    Risk Assessment Summary
+        <Box sx={{ width: '100%', mb: 4 }}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                {/* Left Side - Risk Scenario Card */}
+                <Grid item xs={6}>
+                    <Card sx={{ height: '100%' }}>
+                        <CardContent>
+                            <Typography variant="h5" color="primary" gutterBottom>
+                                Selected Risk Scenario
+                            </Typography>
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="subtitle1" color="primary" gutterBottom>
+                                    Severity Level: {riskState.selected_scenario?.severity_level}
+                                </Typography>
+                                <Typography variant="body1" paragraph>
+                                    {riskState.selected_scenario?.description}
+                                </Typography>
+                                <Typography variant="subtitle1" color="primary" gutterBottom>
+                                    Potential Impact:
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {riskState.selected_scenario?.potential_impact}
+                                </Typography>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* Right Side - Remediation Strategies */}
+                <Grid item xs={6}>
+                    <Card sx={{ height: '100%' }}>
+                        <CardContent>
+                            <Typography variant="h5" color="primary" gutterBottom>
+                                Recommended Risk Remediation Strategies
+                            </Typography>
+                            <Stack spacing={2}>
+                                {getRemediationStrategies().map((strategy, index) => (
+                                    <Box key={index}>
+                                        <Typography variant="subtitle1" color="primary" gutterBottom>
+                                            {index + 1}. {strategy.title}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {strategy.description}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Stack>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* Values Title */}
+            <Box sx={{ 
+                borderBottom: '2px solid',
+                borderColor: 'primary.main',
+                mb: 3,
+                pb: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <Typography 
+                    variant="h5"
+                    sx={{ 
+                        textAlign: 'center',
+                        fontWeight: 500,
+                        color: 'primary.main'
+                    }}
+                >
+                    Values After Historical Analysis
                 </Typography>
-                
-                {/* Risk Scenario Section */}
-                <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" gutterBottom color="primary">
-                        Selected Risk Scenario
-                    </Typography>
-                    <Typography variant="body1" paragraph>
-                        {riskState.selected_scenario?.description}
-                    </Typography>
-                    <Typography variant="subtitle2" color="text.secondary">
-                        Industry: {riskState.industry}
-                    </Typography>
-                </Box>
+            </Box>
 
-                {/* Historical Analysis Section */}
-                <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" gutterBottom color="primary">
-                        Historical Analysis Insights
-                    </Typography>
-                    {riskState.historical_analysis?.similar_incidents?.length > 0 ? (
-                        <>
-                            <Typography variant="body1" paragraph>
-                                Found {riskState.historical_analysis.similar_incidents.length} similar historical incidents.
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                Most similar incident had a {(riskState.historical_analysis.similar_incidents[0].similarity_score * 100).toFixed(0)}% match.
-                            </Typography>
-                        </>
-                    ) : (
-                        <Typography variant="body2" color="text.secondary">
-                            No similar historical incidents found.
-                        </Typography>
-                    )}
-                </Box>
-
-                {/* Final Risk Metrics */}
-                <Box>
-                    <Typography variant="h6" gutterBottom color="primary">
-                        Final Risk Metrics
-                    </Typography>
-                    <Stack spacing={2}>
-                        <Paper variant="outlined" sx={{ p: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                                Risk Score
-                            </Typography>
-                            <Typography variant="h4" color="primary">
-                                {riskState.risk_metrics?.risk_score?.toFixed(2)}
-                            </Typography>
-                        </Paper>
-                        
-                        <Stack direction="row" spacing={2}>
-                            <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
-                                <Typography variant="subtitle2" gutterBottom>
-                                    Threat Event Frequency (TEF)
-                                </Typography>
-                                <Typography variant="h5">
-                                    {riskState.risk_metrics?.tef?.toFixed(2)}
-                                </Typography>
-                            </Paper>
-                            
-                            <Paper variant="outlined" sx={{ p: 2, flex: 1 }}>
-                                <Typography variant="subtitle2" gutterBottom>
-                                    Loss Magnitude (LM)
-                                </Typography>
-                                <Typography variant="h5">
-                                    {riskState.risk_metrics?.lm?.toFixed(2)}
-                                </Typography>
-                            </Paper>
-                        </Stack>
-                    </Stack>
-                </Box>
-            </Paper>
-        </Stack>
+            {/* Risk Metrics Table */}
+            <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Risk Metric</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Current Value</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        <TableRow>
+                            <TableCell>Risk Score</TableCell>
+                            <TableCell align="right">{riskState.risk_metrics?.risk_score?.toFixed(2)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                            <TableCell>Threat Event Frequency (TEF)</TableCell>
+                            <TableCell align="right">{riskState.risk_metrics?.tef?.toFixed(2)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                            <TableCell>Loss Magnitude (LM)</TableCell>
+                            <TableCell align="right">{riskState.risk_metrics?.lm?.toFixed(2)}</TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Box>
     );
 }; 
