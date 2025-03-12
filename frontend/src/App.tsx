@@ -209,6 +209,7 @@ function App() {
                                 metrics={riskState.risk_metrics} 
                                 scenarios={riskState.scenarios}
                                 selectedScenario={riskState.selected_scenario}
+                                showScenarios={false}
                             />
                         </Paper>
                     </Stack>
