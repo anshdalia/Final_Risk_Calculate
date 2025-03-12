@@ -16,6 +16,7 @@ import {
 import { LoadingButton } from '@mui/lab';
 import { InitialInputForm } from './components/InitialInputForm';
 import { DynamicQuestionsForm } from './components/DynamicQuestionsForm';
+import { IndustryAnalysisForm } from './components/IndustryAnalysisForm';
 import { RiskMetricsDisplay } from './components/RiskMetricsDisplay';
 import { api } from './api';
 import { RiskState } from './types';
@@ -180,23 +181,20 @@ function App() {
 
                 {activeStep === 2 && riskState && (
                     <Stack spacing={3}>
+                        <IndustryAnalysisForm
+                            riskState={riskState}
+                            onAnalyze={handleIndustryAnalysis}
+                            disabled={completedSteps.includes(2)}
+                            loading={loading}
+                        />
                         <Paper sx={{ p: 3 }}>
                             <RiskMetricsDisplay 
                                 metrics={riskState.risk_metrics} 
                                 scenarios={riskState.scenarios}
                                 selectedScenario={riskState.selected_scenario}
+                                showScenarios={false}
                             />
                         </Paper>
-                        <LoadingButton
-                            loading={loading}
-                            variant="contained"
-                            onClick={handleIndustryAnalysis}
-                            disabled={completedSteps.includes(2)}
-                            fullWidth
-                            sx={{ maxWidth: 600, mx: 'auto' }}
-                        >
-                            Process Industry Analysis
-                        </LoadingButton>
                     </Stack>
                 )}
 
