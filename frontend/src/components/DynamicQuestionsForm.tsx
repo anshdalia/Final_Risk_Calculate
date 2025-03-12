@@ -97,36 +97,100 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 {/* Left Side - Scenarios */}
                 <Grid item xs={6}>
-                    <Paper sx={{ p: 2, height: '100%' }}>
-                        <Typography variant="h6" gutterBottom>Risk Scenarios</Typography>
+                    <Paper sx={{ 
+                        p: 3, 
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        <Box sx={{ 
+                            borderBottom: '2px solid',
+                            borderColor: 'primary.main',
+                            mb: 3,
+                            pb: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <Typography 
+                                variant="h4" 
+                                sx={{ 
+                                    textAlign: 'center',
+                                    fontWeight: 500,
+                                    fontSize: '1.75rem',
+                                    color: 'primary.main'
+                                }}
+                            >
+                                Risk Scenarios Assessment
+                            </Typography>
+                        </Box>
                         {riskState?.scenarios && (
-                            <ScenariosDisplay 
-                                scenarios={riskState.scenarios} 
-                                selectedScenario={riskState.selected_scenario}
-                            />
+                            <Box sx={{ flexGrow: 1 }}>
+                                <ScenariosDisplay 
+                                    scenarios={riskState.scenarios} 
+                                    selectedScenario={riskState.selected_scenario}
+                                />
+                            </Box>
                         )}
                     </Paper>
                 </Grid>
 
                 {/* Right Side - Questions */}
                 <Grid item xs={6}>
-                    <Paper sx={{ p: 2, height: '100%' }}>
-                        <Typography variant="h6" gutterBottom>Dynamic Questions</Typography>
-                        <form onSubmit={handleSubmit}>
-                            {questions.map((question, index) => (
-                                <TextField
-                                    key={index}
-                                    fullWidth
-                                    multiline
-                                    rows={2}
-                                    label={`Question ${index + 1}`}
-                                    placeholder={question}
-                                    value={answers[question] || ''}
-                                    onChange={(e) => handleAnswerChange(question, e.target.value)}
-                                    sx={{ mb: 2 }}
-                                    disabled={disabled || isLoading}
-                                />
-                            ))}
+                    <Paper sx={{ 
+                        p: 3, 
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        <Box sx={{ 
+                            borderBottom: '2px solid',
+                            borderColor: 'primary.main',
+                            mb: 3,
+                            pb: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <Typography 
+                                variant="h4" 
+                                sx={{ 
+                                    textAlign: 'center',
+                                    fontWeight: 500,
+                                    fontSize: '1.75rem',
+                                    color: 'primary.main'
+                                }}
+                            >
+                                Security Assessment Questions
+                            </Typography>
+                        </Box>
+                        <form onSubmit={handleSubmit} style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                            <Box sx={{ flexGrow: 1 }}>
+                                {questions.map((question, index) => (
+                                    <Box key={index} sx={{ mb: 2 }}>
+                                        <Typography 
+                                            variant="subtitle1" 
+                                            sx={{ 
+                                                fontWeight: 'bold',
+                                                mb: 1,
+                                                fontSize: '0.95rem'
+                                            }}
+                                        >
+                                            {question}
+                                        </Typography>
+                                        <TextField
+                                            fullWidth
+                                            multiline
+                                            rows={1}
+                                            placeholder="Enter your answer here..."
+                                            value={answers[question] || ''}
+                                            onChange={(e) => handleAnswerChange(question, e.target.value)}
+                                            disabled={disabled || isLoading}
+                                            size="small"
+                                        />
+                                    </Box>
+                                ))}
+                            </Box>
                             <LoadingButton 
                                 type="submit" 
                                 variant="contained" 
@@ -134,6 +198,7 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
                                 fullWidth
                                 loading={isLoading}
                                 disabled={disabled}
+                                sx={{ mt: 2 }}
                             >
                                 Submit Answers
                             </LoadingButton>
@@ -143,9 +208,27 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
             </Grid>
 
             {/* Values Title */}
-            <Typography variant="h4" gutterBottom sx={{ textAlign: 'center', fontWeight: 500, mb: 4 }}>
-                Values After Phase 1: Initial Input
-            </Typography>
+            <Box sx={{ 
+                borderBottom: '2px solid',
+                borderColor: 'primary.main',
+                mb: 3,
+                pb: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <Typography 
+                    variant="h4" 
+                    sx={{ 
+                        textAlign: 'center',
+                        fontWeight: 500,
+                        fontSize: '1.75rem',
+                        color: 'primary.main'
+                    }}
+                >
+                    Values After Phase 1: Initial Input
+                </Typography>
+            </Box>
 
             <Snackbar
                 open={toast.open}
