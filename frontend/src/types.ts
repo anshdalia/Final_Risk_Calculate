@@ -24,6 +24,9 @@ export interface LossMagnitude {
 }
 
 export interface RiskMetrics {
+    risk_score: number;
+    tef: number;
+    lm: number;
     primary_loss_event_frequency: PrimaryLossEventFrequency;
     secondary_loss_event_frequency: SecondaryLossEventFrequency;
     primary_loss_magnitude: LossMagnitude;
@@ -65,11 +68,11 @@ interface HistoricalAnalysis {
 }
 
 export interface RiskState {
+    industry: string;
     risk_metrics: RiskMetrics;
     user_inputs: {
         revenue: number;
         employees: number;
-        industry: string;
         location: string;
         additional_factors: string[];
     };
@@ -77,8 +80,18 @@ export interface RiskState {
     selected_scenario: Scenario;
     dynamic_questions: string[];
     question_answers: { [key: string]: string };
-    industry_analysis: any;
-    historical_analysis: HistoricalAnalysis;
+    historical_analysis?: {
+        similar_incidents: any[];
+        risk_adjustments: {
+            frequency_factor: number;
+            magnitude_factor: number;
+            confidence: number;
+        };
+        summary: {
+            total_matches: number;
+            most_common_type: string;
+        };
+    };
     remediation_suggestions: string[];
 }
 

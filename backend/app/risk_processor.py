@@ -79,7 +79,7 @@ class RiskProcessor:
             # Get GPT-4-mini analysis
             response = self.gpt4_mini.generate(prompt)
             analysis = json.loads(response)
-            
+        
             # Log initial estimates
             logger.info("=== Initial GPT Risk Estimates ===")
             logger.info(f"Company Profile: {industry} company, {employees} employees")
@@ -105,11 +105,11 @@ class RiskProcessor:
             
             # Store questions
             self.state.set_dynamic_questions(analysis['questions'])
-            
+        
             return self.state.get_current_state()
             
         except Exception as e:
-            logger.error(f"Error getting initial estimates: {str(e)}")
+            logger.error(f"Error generating initial analysis: {str(e)}")
             raise
     
     def _calculate_initial_tef(self, industry: str, employees: int, additional_factors: List[str] = None) -> Dict:
@@ -422,7 +422,7 @@ Format response as JSON with:
                 'insights': analysis['industry_insights'],
                 'regional_cyber_crimes': analysis['regional_cyber_crimes']
             })
-            
+        
             return self.state.get_current_state()
             
         except Exception as e:

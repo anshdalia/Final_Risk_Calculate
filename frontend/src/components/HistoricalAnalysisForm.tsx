@@ -14,9 +14,11 @@ import {
     Chip,
     Tooltip,
     IconButton,
+    Button,
 } from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
 import InfoIcon from '@mui/icons-material/Info';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { RiskState } from '../types';
 import { ScenariosDisplay } from './RiskMetricsDisplay';
 
@@ -25,6 +27,7 @@ interface Props {
     onAnalyze: () => Promise<void>;
     disabled?: boolean;
     loading?: boolean;
+    onNext?: () => void;
 }
 
 export const HistoricalAnalysisForm: React.FC<Props> = ({
@@ -32,6 +35,7 @@ export const HistoricalAnalysisForm: React.FC<Props> = ({
     onAnalyze,
     disabled = false,
     loading = false,
+    onNext
 }) => {
     const formatDate = (dateStr: string) => {
         if (!dateStr) return 'N/A';
@@ -288,16 +292,27 @@ export const HistoricalAnalysisForm: React.FC<Props> = ({
                             {renderSimilarIncidents()}
                         </Box>
                         <Stack spacing={2} sx={{ mt: 2 }}>
-                            <LoadingButton 
-                                onClick={onAnalyze}
-                                variant="contained" 
-                                color="primary"
-                                fullWidth
-                                loading={loading}
-                                disabled={disabled}
-                            >
-                                Process Historical Analysis
-                            </LoadingButton>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <LoadingButton
+                                    variant="contained"
+                                    onClick={onAnalyze}
+                                    loading={loading}
+                                    disabled={disabled}
+                                >
+                                    Process Historical Analysis
+                                </LoadingButton>
+                                
+                                {riskState.historical_analysis?.similar_incidents?.length > 0 && (
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={onNext}
+                                        endIcon={<ArrowForwardIcon />}
+                                    >
+                                        View Summary
+                                    </Button>
+                                )}
+                            </Box>
                         </Stack>
                     </Paper>
                 </Grid>

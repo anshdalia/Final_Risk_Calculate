@@ -18,15 +18,19 @@ import { DynamicQuestionsForm } from './components/DynamicQuestionsForm';
 import { IndustryAnalysisForm } from './components/IndustryAnalysisForm';
 import { RiskMetricsDisplay } from './components/RiskMetricsDisplay';
 import { HistoricalAnalysisForm } from './components/HistoricalAnalysisForm';
+import { Summary } from './components/Summary';
 import { api } from './api';
 import { RiskState } from './types';
 
 const steps = [
-    { title: 'Initial Input', description: 'Basic organization information' },
-    { title: 'Dynamic Questions', description: 'Scenario-specific questions' },
-    { title: 'Industry Analysis', description: 'Analysis of industry trends' },
-    { title: 'Historical Analysis', description: 'Historical data analysis' },
+    'Initial Input',
+    'Dynamic Questions',
+    'Industry Analysis',
+    'Historical Analysis',
+    'Summary'
 ];
+
+const maxSteps = 5;  // Update max steps to include all 5 steps
 
 function App() {
     const [riskState, setRiskState] = useState<RiskState | null>(null);
@@ -124,6 +128,12 @@ function App() {
         }
     };
 
+    const handleNext = () => {
+        if (activeStep < maxSteps - 1) {
+            setActiveStep(activeStep + 1);
+        }
+    };
+
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
             <Stack spacing={4}>
@@ -134,16 +144,13 @@ function App() {
                 <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
                     {steps.map((step, index) => (
                         <Step 
-                            key={step.title} 
+                            key={step} 
                             completed={completedSteps.includes(index)}
                             onClick={() => handleStepClick(index)}
                             sx={{ cursor: canNavigateToStep(index) ? 'pointer' : 'default' }}
                         >
                             <StepLabel>
-                                <Typography variant="subtitle1">{step.title}</Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    {step.description}
-                                </Typography>
+                                <Typography variant="subtitle1">{step}</Typography>
                             </StepLabel>
                         </Step>
                     ))}
@@ -203,6 +210,7 @@ function App() {
                             onAnalyze={handleHistoricalAnalysis}
                             disabled={completedSteps.includes(3)}
                             loading={loading}
+                            onNext={handleNext}
                         />
                         <Paper sx={{ p: 3 }}>
                             <RiskMetricsDisplay 
@@ -213,6 +221,10 @@ function App() {
                             />
                         </Paper>
                     </Stack>
+                )}
+
+                {activeStep === 4 && riskState && (
+                    <Summary riskState={riskState} />
                 )}
             </Stack>
 
