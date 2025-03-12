@@ -9,15 +9,24 @@ import {
     Typography,
     Alert,
     Snackbar,
+    Paper,
 } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 
 interface Props {
     questions: string[];
-    onSubmit: (answers: { [key: string]: string }) => Promise<void>;
+    onSubmit: (answers: { [key: string]: string }) => void;
+    disabled?: boolean;
+    initialValues?: { [key: string]: string };
 }
 
-export const DynamicQuestionsForm: React.FC<Props> = ({ questions, onSubmit }) => {
-    const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+export const DynamicQuestionsForm: React.FC<Props> = ({ 
+    questions, 
+    onSubmit, 
+    disabled = false,
+    initialValues = {} 
+}) => {
+    const [answers, setAnswers] = useState<{ [key: string]: string }>(initialValues);
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
 
@@ -66,33 +75,34 @@ export const DynamicQuestionsForm: React.FC<Props> = ({ questions, onSubmit }) =
     }
 
     return (
-        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', maxWidth: 600, p: 2 }}>
-            <Stack spacing={3}>
-                {questions.map((question, index) => (
-                    <FormControl key={index} required>
-                        <FormLabel>
-                            {index + 1}. {question}
-                        </FormLabel>
+        <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+                Dynamic Questions
+            </Typography>
+            <form onSubmit={handleSubmit}>
+                <Stack spacing={3}>
+                    {questions.map((question, index) => (
                         <TextField
+                            key={index}
+                            label={question}
                             value={answers[question] || ''}
                             onChange={(e) => handleAnswerChange(question, e.target.value)}
-                            placeholder="Enter your answer"
                             multiline
-                            rows={3}
-                            fullWidth
+                            rows={2}
+                            required
+                            disabled={disabled}
                         />
-                    </FormControl>
-                ))}
-
-                <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={isLoading}
-                    fullWidth
-                >
-                    Submit Answers
-                </Button>
-            </Stack>
+                    ))}
+                    <LoadingButton
+                        type="submit"
+                        variant="contained"
+                        disabled={disabled}
+                        loading={isLoading}
+                    >
+                        Submit Answers
+                    </LoadingButton>
+                </Stack>
+            </form>
 
             <Snackbar
                 open={toast.open}
@@ -103,6 +113,6 @@ export const DynamicQuestionsForm: React.FC<Props> = ({ questions, onSubmit }) =
                     {toast.message}
                 </Alert>
             </Snackbar>
-        </Box>
+        </Paper>
     );
 }; 

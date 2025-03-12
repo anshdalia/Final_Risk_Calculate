@@ -55,9 +55,9 @@ export interface RiskState {
 }
 
 export interface InitialInputFormData {
-    revenue: number;
-    employees: number;
+    revenue: string;
+    employees: string;
     industry: string;
     location: string;
-    additional_factors?: string[];
+    additional_factors: string[];
 } 

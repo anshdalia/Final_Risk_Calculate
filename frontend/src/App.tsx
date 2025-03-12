@@ -11,7 +11,9 @@ import {
     Snackbar,
     Paper,
     Stack,
+    CircularProgress,
 } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 import { InitialInputForm } from './components/InitialInputForm';
 import { DynamicQuestionsForm } from './components/DynamicQuestionsForm';
 import { RiskMetricsDisplay } from './components/RiskMetricsDisplay';
@@ -29,10 +31,12 @@ function App() {
     const [riskState, setRiskState] = useState<RiskState | null>(null);
     const [activeStep, setActiveStep] = useState(0);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+    const [loading, setLoading] = useState(false);
+    const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
     const canNavigateToStep = (step: number) => {
         if (!riskState) return step === 0;
-        return step <= Math.min(activeStep, 4);
+        return completedSteps.includes(step) || step <= Math.max(...completedSteps, activeStep);
     };
 
     const handleStepClick = (step: number) => {
@@ -43,6 +47,7 @@ function App() {
 
     const handleInitialSubmit = async (data: any) => {
         try {
+            setLoading(true);
             const result = await api.submitInitialInput(data);
             console.log('Received state from backend:', {
                 scenarios: result.scenarios,
@@ -50,6 +55,7 @@ function App() {
             });
             setRiskState(result);
             setActiveStep(1);
+            setCompletedSteps([...completedSteps, 0]);
         } catch (error) {
             console.error('Error:', error);
             setToast({
@@ -57,14 +63,18 @@ function App() {
                 message: 'Error processing initial input',
                 severity: 'error'
             });
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleQuestionsSubmit = async (answers: { [key: string]: string }) => {
         try {
+            setLoading(true);
             const result = await api.submitQuestionAnswers(answers);
             setRiskState(result);
             setActiveStep(2);
+            setCompletedSteps([...completedSteps, 1]);
         } catch (error) {
             console.error('Error:', error);
             setToast({
@@ -72,14 +82,18 @@ function App() {
                 message: 'Error processing answers',
                 severity: 'error'
             });
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleIndustryAnalysis = async () => {
         try {
+            setLoading(true);
             const result = await api.processIndustryAnalysis();
             setRiskState(result);
             setActiveStep(3);
+            setCompletedSteps([...completedSteps, 2]);
         } catch (error) {
             console.error('Error:', error);
             setToast({
@@ -87,14 +101,18 @@ function App() {
                 message: 'Error processing industry analysis',
                 severity: 'error'
             });
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleHistoricalAnalysis = async () => {
         try {
+            setLoading(true);
             const result = await api.processHistoricalAnalysis();
             setRiskState(result);
             setActiveStep(4);
+            setCompletedSteps([...completedSteps, 3]);
         } catch (error) {
             console.error('Error:', error);
             setToast({
@@ -102,6 +120,8 @@ function App() {
                 message: 'Error processing historical analysis',
                 severity: 'error'
             });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -116,7 +136,7 @@ function App() {
                     {steps.map((step, index) => (
                         <Step 
                             key={step.title} 
-                            completed={canNavigateToStep(index + 1)}
+                            completed={completedSteps.includes(index)}
                             onClick={() => handleStepClick(index)}
                             sx={{ cursor: canNavigateToStep(index) ? 'pointer' : 'default' }}
                         >
@@ -131,7 +151,11 @@ function App() {
                 </Stepper>
 
                 {activeStep === 0 && (
-                    <InitialInputForm onSubmit={handleInitialSubmit} />
+                    <InitialInputForm 
+                        onSubmit={handleInitialSubmit}
+                        disabled={loading || completedSteps.includes(0)}
+                        initialValues={riskState?.user_inputs}
+                    />
                 )}
 
                 {activeStep === 1 && riskState && (
@@ -147,6 +171,8 @@ function App() {
                         <DynamicQuestionsForm
                             questions={riskState.dynamic_questions}
                             onSubmit={handleQuestionsSubmit}
+                            disabled={loading || completedSteps.includes(1)}
+                            initialValues={riskState.question_answers}
                         />
                         <Paper sx={{ p: 3 }}>
                             <RiskMetricsDisplay 
@@ -168,14 +194,16 @@ function App() {
                                 selectedScenario={riskState.selected_scenario}
                             />
                         </Paper>
-                        <Button
+                        <LoadingButton
+                            loading={loading}
                             variant="contained"
                             onClick={handleIndustryAnalysis}
+                            disabled={completedSteps.includes(2)}
                             fullWidth
                             sx={{ maxWidth: 600, mx: 'auto' }}
                         >
                             Process Industry Analysis
-                        </Button>
+                        </LoadingButton>
                     </Stack>
                 )}
 
@@ -188,14 +216,16 @@ function App() {
                                 selectedScenario={riskState.selected_scenario}
                             />
                         </Paper>
-                        <Button
+                        <LoadingButton
+                            loading={loading}
                             variant="contained"
                             onClick={handleHistoricalAnalysis}
+                            disabled={completedSteps.includes(3)}
                             fullWidth
                             sx={{ maxWidth: 600, mx: 'auto' }}
                         >
                             Process Historical Analysis
-                        </Button>
+                        </LoadingButton>
                     </Stack>
                 )}
 

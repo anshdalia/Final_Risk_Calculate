@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
     Box,
-    Button,
     FormControl,
     FormLabel,
     TextField,
@@ -11,10 +10,19 @@ import {
     Alert,
     Snackbar,
 } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 import { InitialInputFormData } from '../types';
 
 interface Props {
-    onSubmit: (data: InitialInputFormData) => Promise<void>;
+    onSubmit: (data: any) => void;
+    disabled?: boolean;
+    initialValues?: {
+        revenue: number;
+        employees: number;
+        industry: string;
+        location: string;
+        additional_factors: string[];
+    };
 }
 
 const US_STATES = [
@@ -25,7 +33,7 @@ const US_STATES = [
     'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
 ];
 
-export const InitialInputForm: React.FC<Props> = ({ onSubmit }) => {
+export const InitialInputForm: React.FC<Props> = ({ onSubmit, disabled = false, initialValues }) => {
     const [formData, setFormData] = useState<InitialInputFormData>({
         revenue: '',
         employees: '',
@@ -87,6 +95,7 @@ export const InitialInputForm: React.FC<Props> = ({ onSubmit }) => {
                         placeholder="Enter annual revenue"
                         fullWidth
                         required
+                        disabled={disabled}
                     />
                 </FormControl>
 
@@ -98,6 +107,7 @@ export const InitialInputForm: React.FC<Props> = ({ onSubmit }) => {
                         placeholder="Enter number of employees"
                         fullWidth
                         required
+                        disabled={disabled}
                     />
                 </FormControl>
 
@@ -109,6 +119,7 @@ export const InitialInputForm: React.FC<Props> = ({ onSubmit }) => {
                         placeholder="Enter industry"
                         fullWidth
                         required
+                        disabled={disabled}
                     />
                 </FormControl>
 
@@ -120,6 +131,7 @@ export const InitialInputForm: React.FC<Props> = ({ onSubmit }) => {
                         displayEmpty
                         fullWidth
                         required
+                        disabled={disabled}
                     >
                         <MenuItem value="" disabled>Select state</MenuItem>
                         {US_STATES.map((state) => (
@@ -141,17 +153,19 @@ export const InitialInputForm: React.FC<Props> = ({ onSubmit }) => {
                         fullWidth
                         required
                         helperText="Enter each risk factor on a new line"
+                        disabled={disabled}
                     />
                 </FormControl>
 
-                <Button
+                <LoadingButton
                     type="submit"
                     variant="contained"
-                    disabled={isLoading}
+                    disabled={disabled}
+                    loading={isLoading}
                     fullWidth
                 >
                     Submit Initial Assessment
-                </Button>
+                </LoadingButton>
             </Stack>
 
             <Snackbar

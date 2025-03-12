@@ -13,6 +13,8 @@ import {
     TableContainer,
     Alert,
 } from '@mui/material';
+import InfoIcon from '@mui/icons-material/Info';
+import WarningIcon from '@mui/icons-material/Warning';
 import { RiskMetrics, RiskMetric } from '../types';
 
 interface Props {
@@ -108,21 +110,32 @@ const ScenariosDisplay: React.FC<{
                         borderColor: 'primary.main'
                     }}
                 >
-                    <Typography variant="subtitle1">
-                        Scenario {index + 1}:
-                    </Typography>
-                    <Typography variant="body1" sx={{ mb: 1 }}>
-                        {scenario.description}
-                    </Typography>
-                    <Alert severity={
-                        scenario.severity_level === 'HIGH' ? 'error' :
-                        scenario.severity_level === 'MEDIUM' ? 'warning' : 'info'
-                    } sx={{ mt: 1 }}>
-                        Severity Level: {scenario.severity_level}
-                    </Alert>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        Potential Impact: {scenario.potential_impact}
-                    </Typography>
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                        <Box sx={{ pt: 0.5 }}>
+                            {scenario.severity_level === 'HIGH' ? (
+                                <WarningIcon color="error" />
+                            ) : (
+                                <InfoIcon color="info" />
+                            )}
+                        </Box>
+                        <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="subtitle1">
+                                Scenario {index + 1}:
+                            </Typography>
+                            <Typography variant="body1" sx={{ mb: 1 }}>
+                                {scenario.description}
+                            </Typography>
+                            <Alert severity={
+                                scenario.severity_level === 'HIGH' ? 'error' :
+                                scenario.severity_level === 'MEDIUM' ? 'warning' : 'info'
+                            } sx={{ mt: 1 }}>
+                                Severity Level: {scenario.severity_level}
+                            </Alert>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                Potential Impact: {scenario.potential_impact}
+                            </Typography>
+                        </Box>
+                    </Stack>
                 </Paper>
             ))}
         </Stack>
