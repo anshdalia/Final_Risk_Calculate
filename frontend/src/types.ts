@@ -32,7 +32,7 @@ export interface RiskMetrics {
 
 export interface Scenario {
     description: string;
-    risk_level: string;
+    severity_level: string;
     potential_impact: string;
 }
 
@@ -45,7 +45,7 @@ export interface RiskState {
         location: string;
         additional_factors: string[];
     };
-    scenarios: Array<{ description: string }>;
+    scenarios: Array<Scenario>;
     selected_scenario: Scenario;
     dynamic_questions: string[];
     question_answers: { [key: string]: string };

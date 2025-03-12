@@ -2,6 +2,9 @@ import json
 from typing import List, Dict, Any
 from app.risk_state import RiskState
 from app.historical_analyzer import HistoricalAnalyzer
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RiskProcessor:
     def __init__(self, umd_db_path: str, gpt4_mini_client: Any):
@@ -29,13 +32,25 @@ class RiskProcessor:
         Provide a JSON response with the following structure:
         {{
             "scenarios": [
-                {{ "description": "Scenario 1 description" }},
-                {{ "description": "Scenario 2 description" }},
-                {{ "description": "Scenario 3 description" }}
+                {{ 
+                    "description": "Most severe scenario description",
+                    "severity_level": "HIGH",
+                    "potential_impact": "Description of potential impact"
+                }},
+                {{ 
+                    "description": "Medium severity scenario description",
+                    "severity_level": "MEDIUM",
+                    "potential_impact": "Description of potential impact"
+                }},
+                {{ 
+                    "description": "Lowest severity scenario description",
+                    "severity_level": "LOW",
+                    "potential_impact": "Description of potential impact"
+                }}
             ],
             "selected_scenario": {{
-                "description": "Description of highest risk scenario",
-                "risk_level": "HIGH/MEDIUM/LOW",
+                "description": "Description of highest severity scenario (same as first scenario)",
+                "severity_level": "HIGH",
                 "potential_impact": "Description of potential impact"
             }},
             "risk_metrics": {{
@@ -78,11 +93,15 @@ class RiskProcessor:
             response = self.gpt4_mini.generate(prompt)
             analysis = json.loads(response)
             
+            # Log the scenarios we received
+            logger.info(f"Received scenarios from GPT: {json.dumps(analysis.get('scenarios', []), indent=2)}")
+            logger.info(f"Selected scenario: {json.dumps(analysis.get('selected_scenario', {}), indent=2)}")
+            
             # Update state with GPT-4-mini analysis
             self.state.set_selected_scenario(
                 analysis['scenarios'],
                 analysis['selected_scenario']['description'],
-                analysis['selected_scenario']['risk_level'],
+                analysis['selected_scenario']['severity_level'],
                 analysis['selected_scenario']['potential_impact']
             )
             
@@ -150,7 +169,7 @@ class RiskProcessor:
         
         Selected High-Risk Scenario for Analysis:
         {self.state.selected_scenario['description']}
-        Risk Level: {self.state.selected_scenario['risk_level']}
+        Risk Level: {self.state.selected_scenario['severity_level']}
         Potential Impact: {self.state.selected_scenario['potential_impact']}
         
         Current Risk Metrics: {json.dumps(self.state.get_current_state()['risk_metrics'])}

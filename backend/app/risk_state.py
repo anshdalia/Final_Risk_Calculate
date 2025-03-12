@@ -52,7 +52,7 @@ class RiskState:
         # Selected risk scenario
         self.selected_scenario = {
             "description": "",
-            "risk_level": "",
+            "severity_level": "",
             "potential_impact": ""
         }
         
@@ -100,7 +100,7 @@ class RiskState:
             self.user_inputs["additional_factors"] = additional_factors
         logger.debug(f"User inputs set: {self.user_inputs}")
     
-    def set_selected_scenario(self, scenarios: List[Dict], selected_description: str, risk_level: str, potential_impact: str):
+    def set_selected_scenario(self, scenarios: List[Dict], selected_description: str, severity_level: str, potential_impact: str):
         """Set the selected risk scenario and store all scenarios"""
         logger.info("Setting selected scenario and storing all scenarios")
         
@@ -110,7 +110,7 @@ class RiskState:
         # Set the selected scenario
         self.selected_scenario = {
             "description": selected_description,
-            "risk_level": risk_level,
+            "severity_level": severity_level,
             "potential_impact": potential_impact
         }
         logger.info(f"Selected scenario set: {self.selected_scenario}")

@@ -30,9 +30,24 @@ function App() {
     const [activeStep, setActiveStep] = useState(0);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
 
+    const canNavigateToStep = (step: number) => {
+        if (!riskState) return step === 0;
+        return step <= Math.min(activeStep, 4);
+    };
+
+    const handleStepClick = (step: number) => {
+        if (canNavigateToStep(step)) {
+            setActiveStep(step);
+        }
+    };
+
     const handleInitialSubmit = async (data: any) => {
         try {
             const result = await api.submitInitialInput(data);
+            console.log('Received state from backend:', {
+                scenarios: result.scenarios,
+                selectedScenario: result.selected_scenario
+            });
             setRiskState(result);
             setActiveStep(1);
         } catch (error) {
@@ -98,8 +113,13 @@ function App() {
                 </Typography>
                 
                 <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-                    {steps.map((step) => (
-                        <Step key={step.title}>
+                    {steps.map((step, index) => (
+                        <Step 
+                            key={step.title} 
+                            completed={canNavigateToStep(index + 1)}
+                            onClick={() => handleStepClick(index)}
+                            sx={{ cursor: canNavigateToStep(index) ? 'pointer' : 'default' }}
+                        >
                             <StepLabel>
                                 <Typography variant="subtitle1">{step.title}</Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -117,17 +137,25 @@ function App() {
                 {activeStep === 1 && riskState && (
                     <Stack spacing={3}>
                         <Paper sx={{ p: 3 }}>
-                            <Typography variant="h6" gutterBottom>
-                                Selected Risk Scenario
-                            </Typography>
-                            <Typography><strong>Description:</strong> {riskState.selected_scenario.description}</Typography>
-                            <Typography><strong>Risk Level:</strong> {riskState.selected_scenario.risk_level}</Typography>
-                            <Typography><strong>Potential Impact:</strong> {riskState.selected_scenario.potential_impact}</Typography>
+                            <RiskMetricsDisplay 
+                                metrics={riskState.risk_metrics} 
+                                scenarios={riskState.scenarios}
+                                selectedScenario={riskState.selected_scenario}
+                                showMetrics={false}
+                            />
                         </Paper>
                         <DynamicQuestionsForm
                             questions={riskState.dynamic_questions}
                             onSubmit={handleQuestionsSubmit}
                         />
+                        <Paper sx={{ p: 3 }}>
+                            <RiskMetricsDisplay 
+                                metrics={riskState.risk_metrics} 
+                                scenarios={riskState.scenarios}
+                                selectedScenario={riskState.selected_scenario}
+                                showScenarios={false}
+                            />
+                        </Paper>
                     </Stack>
                 )}
 
