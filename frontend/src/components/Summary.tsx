@@ -1,30 +1,74 @@
-import React from 'react';
-import { Box, Grid, Paper, Stack, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Card, CardContent } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Grid, Paper, Stack, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Card, CardContent, CircularProgress } from '@mui/material';
 import { RiskState } from '../types';
 
 interface SummaryProps {
     riskState: RiskState;
 }
 
+interface RemediationStrategy {
+    title: string;
+    description: string;
+}
+
 export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
-    // Helper function to get remediation strategies based on scenario
-    const getRemediationStrategies = () => {
-        const strategies = [
-            {
-                title: "Technical Controls",
-                description: "Implement advanced threat detection systems and regular security assessments to identify and address vulnerabilities proactively."
-            },
-            {
-                title: "Operational Procedures",
-                description: "Establish comprehensive incident response plans and conduct regular employee training on security awareness and best practices."
-            },
-            {
-                title: "Risk Transfer",
-                description: "Consider cyber insurance coverage and third-party security services to help mitigate potential financial impacts."
+    const [remediationStrategies, setRemediationStrategies] = useState<RemediationStrategy[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchRemediationStrategies = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/get_remediation_strategies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        industry: riskState.industry,
+                        location: riskState.user_inputs.location,
+                        employees: riskState.user_inputs.employees,
+                        revenue: riskState.user_inputs.revenue,
+                        risk_factors: riskState.user_inputs.additional_factors,
+                        risk_scenario: {
+                            description: riskState.selected_scenario?.description,
+                            severity: riskState.selected_scenario?.severity_level,
+                            potential_impact: riskState.selected_scenario?.potential_impact
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch remediation strategies');
+                }
+
+                const data = await response.json();
+                setRemediationStrategies(data.strategies);
+            } catch (error) {
+                console.error('Error fetching remediation strategies:', error);
+                // Fallback strategies in case of error
+                setRemediationStrategies([
+                    {
+                        title: "Technical Controls",
+                        description: "Implement advanced threat detection systems and regular security assessments."
+                    },
+                    {
+                        title: "Operational Procedures",
+                        description: "Establish incident response plans and conduct regular security training."
+                    },
+                    {
+                        title: "Risk Transfer",
+                        description: "Consider cyber insurance and third-party security services."
+                    }
+                ]);
+            } finally {
+                setLoading(false);
             }
-        ];
-        return strategies;
-    };
+        };
+
+        if (riskState.selected_scenario) {
+            fetchRemediationStrategies();
+        }
+    }, [riskState]);
 
     return (
         <Box sx={{ width: '100%', mb: 4 }}>
@@ -61,18 +105,24 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                             <Typography variant="h5" color="primary" gutterBottom>
                                 Recommended Risk Remediation Strategies
                             </Typography>
-                            <Stack spacing={2}>
-                                {getRemediationStrategies().map((strategy, index) => (
-                                    <Box key={index}>
-                                        <Typography variant="subtitle1" color="primary" gutterBottom>
-                                            {index + 1}. {strategy.title}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {strategy.description}
-                                        </Typography>
-                                    </Box>
-                                ))}
-                            </Stack>
+                            {loading ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+                                    <CircularProgress />
+                                </Box>
+                            ) : (
+                                <Stack spacing={2}>
+                                    {remediationStrategies.map((strategy, index) => (
+                                        <Box key={index}>
+                                            <Typography variant="subtitle1" color="primary" gutterBottom>
+                                                {index + 1}. {strategy.title}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {strategy.description}
+                                            </Typography>
+                                        </Box>
+                                    ))}
+                                </Stack>
+                            )}
                         </CardContent>
                     </Card>
                 </Grid>
