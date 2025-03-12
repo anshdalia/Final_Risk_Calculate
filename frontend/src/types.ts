@@ -90,6 +90,13 @@ export interface RiskState {
         summary: {
             total_matches: number;
             most_common_type: string;
+            avg_financial_impact: number;
+        };
+        risk_metrics?: {
+            primary_loss_event_frequency: PrimaryLossEventFrequency;
+            secondary_loss_event_frequency: SecondaryLossEventFrequency;
+            primary_loss_magnitude: LossMagnitude;
+            secondary_loss_magnitude: LossMagnitude;
         };
     };
     remediation_suggestions: string[];

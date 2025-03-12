@@ -105,9 +105,10 @@ class RiskProcessor:
             
             # Store questions
             self.state.set_dynamic_questions(analysis['questions'])
-        
-            return self.state.get_current_state()
             
+            # Return the current state
+            return self.state.get_current_state()
+        
         except Exception as e:
             logger.error(f"Error generating initial analysis: {str(e)}")
             raise
@@ -422,7 +423,7 @@ Format response as JSON with:
                 'insights': analysis['industry_insights'],
                 'regional_cyber_crimes': analysis['regional_cyber_crimes']
             })
-        
+            
             return self.state.get_current_state()
             
         except Exception as e:

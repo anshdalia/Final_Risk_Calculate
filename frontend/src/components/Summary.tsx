@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Grid, Paper, Stack, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Card, CardContent, CircularProgress } from '@mui/material';
+import { Box, Grid, Paper, Stack, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Card, CardContent, CircularProgress, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { RiskMetricsDisplay } from './RiskMetricsDisplay';
+import { RiskMetrics, RiskMetric } from '../types';
 
 interface SummaryProps {
     riskState: RiskState;
@@ -195,9 +197,57 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
     const [remediationStrategies, setRemediationStrategies] = useState<RemediationStrategy[]>([]);
     const [loading, setLoading] = useState(true);
     const [simulationResults, setSimulationResults] = useState<SimulationResults | null>(null);
+    const [valuesDialogOpen, setValuesDialogOpen] = useState(false);
 
     // Store remediation strategies in ref to persist them
     const remediationRef = React.useRef<RemediationStrategy[]>([]);
+
+    // Add detailed logging of all risk values
+    useEffect(() => {
+        console.log('=== SUMMARY PAGE VALUES ===');
+        console.log('1. Risk Metrics:', {
+            risk_score: riskState.risk_metrics?.risk_score,
+            tef: riskState.risk_metrics?.tef,
+            vulnerability: riskState.risk_metrics?.vulnerability,
+            loss_event_frequency: riskState.risk_metrics?.loss_event_frequency,
+            primary_loss: riskState.risk_metrics?.primary_loss,
+            secondary_loss: riskState.risk_metrics?.secondary_loss,
+            lm: riskState.risk_metrics?.lm
+        });
+
+        console.log('2. Historical Analysis:', {
+            risk_adjustments: riskState.historical_analysis?.risk_adjustments,
+            summary: riskState.historical_analysis?.summary,
+            risk_metrics: riskState.historical_analysis?.risk_metrics
+        });
+
+        // Log the values we'll use for simulation
+        const metrics = riskState.historical_analysis?.risk_metrics;
+        if (metrics) {
+            console.log('3. Simulation Input Values:', {
+                tef: metrics.primary_loss_event_frequency?.threat_event_frequency,
+                vulnerability: metrics.primary_loss_event_frequency?.vulnerability,
+                primary_loss_magnitude: metrics.primary_loss_magnitude,
+                secondary_loss_event_frequency: metrics.secondary_loss_event_frequency,
+                secondary_loss_magnitude: metrics.secondary_loss_magnitude
+            });
+        }
+    }, [riskState]);
+
+    // Add logging for entire riskState
+    useEffect(() => {
+        console.log('Full riskState received:', {
+            user_inputs: riskState.user_inputs,
+            selected_scenario: riskState.selected_scenario,
+            threat_event_frequency: riskState.threat_event_frequency,
+            vulnerability: riskState.vulnerability,
+            primary_loss_magnitude: riskState.primary_loss_magnitude,
+            secondary_loss_event_frequency: riskState.secondary_loss_event_frequency,
+            secondary_loss_magnitude: riskState.secondary_loss_magnitude,
+            risk_metrics: riskState.risk_metrics,
+            historical_analysis: riskState.historical_analysis
+        });
+    }, [riskState]);
 
     // Add logging for risk metrics
     useEffect(() => {
@@ -283,36 +333,35 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
 
     useEffect(() => {
         const fetchSimulation = async () => {
+            // Check if we have historical analysis data with risk metrics
             if (!riskState?.historical_analysis?.risk_metrics) {
-                console.log('No historical analysis data available');
+                console.log('No historical analysis risk metrics available');
                 return;
             }
 
             try {
-                console.log('Full historical analysis:', riskState.historical_analysis);
+                console.log('Using historical analysis risk metrics for simulation');
                 
-                // Helper function to safely get nested values
-                const safeGetValue = (obj: any, path: string[], defaultValue = 0) => {
-                    return path.reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : defaultValue), obj);
-                };
-
+                // Get the metrics from historical analysis
+                const metrics = riskState.historical_analysis.risk_metrics;
+                
                 // Sum up all loss magnitudes for a total
                 const calculateTotalLossMagnitude = (magnitudeType: 'primary_loss_magnitude' | 'secondary_loss_magnitude') => {
                     const categories = ['productivity', 'response', 'replacement', 'competitive_advantage', 'fines_and_judgements', 'reputation'];
-                    const metrics = riskState.historical_analysis.risk_metrics[magnitudeType];
+                    const data = metrics[magnitudeType];
                     
-                    if (!metrics) {
+                    if (!data) {
                         console.warn(`No ${magnitudeType} data found`);
                         return { min: 0, likely: 0, max: 0 };
                     }
 
                     return {
                         min: categories.reduce((sum, category) => 
-                            sum + safeGetValue(metrics[category], ['min'], 0), 0),
+                            sum + (data[category]?.min || 0), 0),
                         likely: categories.reduce((sum, category) => 
-                            sum + safeGetValue(metrics[category], ['likely'], 0), 0),
+                            sum + (data[category]?.likely || 0), 0),
                         max: categories.reduce((sum, category) => 
-                            sum + safeGetValue(metrics[category], ['max'], 0), 0)
+                            sum + (data[category]?.max || 0), 0)
                     };
                 };
 
@@ -321,20 +370,20 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                 
                 const simulationData = {
                     tef: {
-                        min: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['threat_event_frequency', 'min'], 0),
-                        likely: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['threat_event_frequency', 'likely'], 0),
-                        max: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['threat_event_frequency', 'max'], 0)
+                        min: metrics.primary_loss_event_frequency?.threat_event_frequency?.min || 0,
+                        likely: metrics.primary_loss_event_frequency?.threat_event_frequency?.likely || 0,
+                        max: metrics.primary_loss_event_frequency?.threat_event_frequency?.max || 0
                     },
                     vulnerability: {
-                        min: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['vulnerability', 'min'], 0),
-                        likely: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['vulnerability', 'likely'], 0),
-                        max: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['vulnerability', 'max'], 0)
+                        min: metrics.primary_loss_event_frequency?.vulnerability?.min || 0,
+                        likely: metrics.primary_loss_event_frequency?.vulnerability?.likely || 0,
+                        max: metrics.primary_loss_event_frequency?.vulnerability?.max || 0
                     },
                     plm: plmTotal,
                     slef: {
-                        min: safeGetValue(riskState.historical_analysis.risk_metrics.secondary_loss_event_frequency, ['SLEF', 'min'], 0),
-                        likely: safeGetValue(riskState.historical_analysis.risk_metrics.secondary_loss_event_frequency, ['SLEF', 'likely'], 0),
-                        max: safeGetValue(riskState.historical_analysis.risk_metrics.secondary_loss_event_frequency, ['SLEF', 'max'], 0)
+                        min: metrics.secondary_loss_event_frequency?.SLEF?.min || 0,
+                        likely: metrics.secondary_loss_event_frequency?.SLEF?.likely || 0,
+                        max: metrics.secondary_loss_event_frequency?.SLEF?.max || 0
                     },
                     slm: slmTotal
                 };
@@ -366,6 +415,49 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
 
     return (
         <Box sx={{ width: '100%', mb: 4 }}>
+            {/* Add button to show values */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                <Button 
+                    variant="contained" 
+                    color="primary" 
+                    onClick={() => {
+                        // Log all values to console and open an alert with key values
+                        const metrics = riskState.historical_analysis?.risk_metrics;
+                        console.log('Historical Analysis Metrics:', metrics);
+                        
+                        let message = 'Historical Analysis Values:\n\n';
+                        
+                        if (metrics) {
+                            // TEF
+                            message += `TEF: ${metrics.primary_loss_event_frequency?.threat_event_frequency?.likely?.toFixed(4) || 'N/A'}\n`;
+                            
+                            // Vulnerability
+                            message += `Vulnerability: ${metrics.primary_loss_event_frequency?.vulnerability?.likely?.toFixed(2) || 'N/A'}\n`;
+                            
+                            // Primary Loss Magnitude
+                            const plmCategories = ['productivity', 'response', 'replacement', 'competitive_advantage', 'fines_and_judgements', 'reputation'];
+                            const plm = metrics.primary_loss_magnitude;
+                            const plmTotal = plm ? plmCategories.reduce((sum, cat) => sum + (plm[cat]?.likely || 0), 0) : 0;
+                            message += `Primary Loss Magnitude: ${plmTotal.toLocaleString()}\n`;
+                            
+                            // SLEF
+                            message += `SLEF: ${metrics.secondary_loss_event_frequency?.SLEF?.likely?.toFixed(4) || 'N/A'}\n`;
+                            
+                            // Secondary Loss Magnitude
+                            const slm = metrics.secondary_loss_magnitude;
+                            const slmTotal = slm ? plmCategories.reduce((sum, cat) => sum + (slm[cat]?.likely || 0), 0) : 0;
+                            message += `Secondary Loss Magnitude: ${slmTotal.toLocaleString()}\n`;
+                        } else {
+                            message += 'No historical analysis metrics available';
+                        }
+                        
+                        alert(message);
+                    }}
+                >
+                    Show Risk Values
+                </Button>
+            </Box>
+
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 {/* Left Side - Risk Scenario Card */}
                 <Grid item xs={6}>
@@ -439,10 +531,11 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                 justifyContent: 'center'
             }}>
                 <Typography 
-                    variant="h5"
+                    variant="h4" 
                     sx={{ 
                         textAlign: 'center',
                         fontWeight: 500,
+                        fontSize: '1.75rem',
                         color: 'primary.main'
                     }}
                 >
@@ -450,31 +543,15 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                 </Typography>
             </Box>
 
-            {/* Risk Metrics Table */}
-            <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Risk Metric</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Current Value</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        <TableRow>
-                            <TableCell>Risk Score</TableCell>
-                            <TableCell align="right">{riskState.risk_metrics?.risk_score?.toFixed(2)}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell>Threat Event Frequency (TEF)</TableCell>
-                            <TableCell align="right">{riskState.risk_metrics?.tef?.toFixed(2)}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell>Loss Magnitude (LM)</TableCell>
-                            <TableCell align="right">{riskState.risk_metrics?.lm?.toFixed(2)}</TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            {/* Use RiskMetricsDisplay exactly as in historical analysis phase */}
+            <Paper sx={{ p: 3, mb: 4 }}>
+                <RiskMetricsDisplay 
+                    metrics={riskState.risk_metrics as unknown as RiskMetrics} 
+                    scenarios={[riskState.selected_scenario]}
+                    selectedScenario={riskState.selected_scenario}
+                    showScenarios={false}
+                />
+            </Paper>
 
             {/* Monte Carlo Simulation Results */}
             <Grid item xs={12}>
