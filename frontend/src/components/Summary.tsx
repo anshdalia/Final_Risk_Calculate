@@ -68,6 +68,127 @@ interface RiskState {
         secondary_loss: number;
         lm: number;
     };
+    historical_analysis: {
+        risk_metrics: {
+            primary_loss_event_frequency: {
+                threat_event_frequency: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                vulnerability: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+            };
+            secondary_loss_event_frequency: {
+                SLEF: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+            };
+            primary_loss_magnitude: {
+                productivity: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                response: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                replacement: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                competitive_advantage: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                fines_and_judgements: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                reputation: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+            };
+            secondary_loss_magnitude: {
+                productivity: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                response: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                replacement: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                competitive_advantage: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                fines_and_judgements: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+                reputation: {
+                    min: number;
+                    likely: number;
+                    max: number;
+                    confidence: number;
+                };
+            };
+        };
+        similar_incidents: Array<{
+            date: string;
+            industry: string;
+            event_type: string;
+            description: string;
+            financial_impact: number | null;
+            affected_count: number | null;
+            similarity_score: number;
+        }>;
+        risk_adjustments: {
+            frequency_factor: number;
+            magnitude_factor: number;
+            confidence: number;
+        };
+        summary: {
+            total_matches: number;
+            avg_financial_impact: number;
+            most_common_type: string;
+        };
+    };
 }
 
 export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
@@ -75,9 +196,32 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
     const [loading, setLoading] = useState(true);
     const [simulationResults, setSimulationResults] = useState<SimulationResults | null>(null);
 
+    // Store remediation strategies in ref to persist them
+    const remediationRef = React.useRef<RemediationStrategy[]>([]);
+
+    // Add logging for risk metrics
+    useEffect(() => {
+        console.log('Current Risk Metrics:', {
+            risk_score: riskState.risk_metrics?.risk_score,
+            tef: riskState.risk_metrics?.tef,
+            vulnerability: riskState.risk_metrics?.vulnerability,
+            loss_event_frequency: riskState.risk_metrics?.loss_event_frequency,
+            primary_loss: riskState.risk_metrics?.primary_loss,
+            secondary_loss: riskState.risk_metrics?.secondary_loss,
+            lm: riskState.risk_metrics?.lm
+        });
+
+        console.log('Historical Analysis Risk Metrics:', riskState.historical_analysis?.risk_metrics);
+    }, [riskState.risk_metrics, riskState.historical_analysis?.risk_metrics]);
+
     useEffect(() => {
         const fetchRemediationStrategies = async () => {
+            if (!riskState.selected_scenario || remediationRef.current.length > 0) {
+                return; // Don't fetch if we already have strategies or no scenario
+            }
+
             try {
+                setLoading(true);
                 const response = await fetch('http://localhost:8000/api/get_remediation_strategies', {
                     method: 'POST',
                     headers: {
@@ -90,9 +234,9 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                         revenue: riskState.user_inputs.revenue,
                         risk_factors: riskState.user_inputs.additional_factors,
                         risk_scenario: {
-                            description: riskState.selected_scenario?.description,
-                            severity_level: riskState.selected_scenario?.severity_level,
-                            potential_impact: riskState.selected_scenario?.potential_impact
+                            description: riskState.selected_scenario.description,
+                            severity_level: riskState.selected_scenario.severity_level,
+                            potential_impact: riskState.selected_scenario.potential_impact
                         }
                     })
                 });
@@ -102,11 +246,12 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                 }
 
                 const data = await response.json();
-                setRemediationStrategies(data.remediation_strategies || []);
+                const strategies = data.remediation_strategies || [];
+                setRemediationStrategies(strategies);
+                remediationRef.current = strategies;
             } catch (error) {
                 console.error('Error fetching remediation strategies:', error);
-                // Fallback strategies in case of error
-                setRemediationStrategies([
+                const fallbackStrategies = [
                     {
                         title: "Technical Controls",
                         description: "Implement advanced threat detection systems and regular security assessments.",
@@ -125,77 +270,99 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                         impact: "Financial protection against major incidents and expert support.",
                         implementation: "Requires budget allocation and vendor assessment."
                     }
-                ]);
+                ];
+                setRemediationStrategies(fallbackStrategies);
+                remediationRef.current = fallbackStrategies;
             } finally {
                 setLoading(false);
             }
         };
 
-        if (riskState.selected_scenario) {
-            fetchRemediationStrategies();
-        }
-    }, [riskState]);
+        fetchRemediationStrategies();
+    }, [riskState.selected_scenario]);
 
     useEffect(() => {
         const fetchSimulation = async () => {
-            if (riskState) {
-                try {
-                    console.log('Sending simulation request with data:', {
-                        tef: riskState.threat_event_frequency,
-                        vulnerability: riskState.vulnerability,
-                        plm: riskState.primary_loss_magnitude,
-                        slef: riskState.secondary_loss_event_frequency,
-                        slm: riskState.secondary_loss_magnitude
-                    });
+            if (!riskState?.historical_analysis?.risk_metrics) {
+                console.log('No historical analysis data available');
+                return;
+            }
+
+            try {
+                console.log('Full historical analysis:', riskState.historical_analysis);
+                
+                // Helper function to safely get nested values
+                const safeGetValue = (obj: any, path: string[], defaultValue = 0) => {
+                    return path.reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : defaultValue), obj);
+                };
+
+                // Sum up all loss magnitudes for a total
+                const calculateTotalLossMagnitude = (magnitudeType: 'primary_loss_magnitude' | 'secondary_loss_magnitude') => {
+                    const categories = ['productivity', 'response', 'replacement', 'competitive_advantage', 'fines_and_judgements', 'reputation'];
+                    const metrics = riskState.historical_analysis.risk_metrics[magnitudeType];
                     
-                    const response = await fetch('http://localhost:8000/api/simulate_risk', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            tef: {
-                                min: riskState.threat_event_frequency?.min || 0,
-                                likely: riskState.threat_event_frequency?.likely || 0,
-                                max: riskState.threat_event_frequency?.max || 0
-                            },
-                            vulnerability: {
-                                min: riskState.vulnerability?.min || 0,
-                                likely: riskState.vulnerability?.likely || 0,
-                                max: riskState.vulnerability?.max || 0
-                            },
-                            plm: {
-                                min: riskState.primary_loss_magnitude?.min || 0,
-                                likely: riskState.primary_loss_magnitude?.likely || 0,
-                                max: riskState.primary_loss_magnitude?.max || 0
-                            },
-                            slef: {
-                                min: riskState.secondary_loss_event_frequency?.min || 0,
-                                likely: riskState.secondary_loss_event_frequency?.likely || 0,
-                                max: riskState.secondary_loss_event_frequency?.max || 0
-                            },
-                            slm: {
-                                min: riskState.secondary_loss_magnitude?.min || 0,
-                                likely: riskState.secondary_loss_magnitude?.likely || 0,
-                                max: riskState.secondary_loss_magnitude?.max || 0
-                            }
-                        }),
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        setSimulationResults(data);
-                    } else {
-                        console.error('Simulation request failed:', await response.text());
+                    if (!metrics) {
+                        console.warn(`No ${magnitudeType} data found`);
+                        return { min: 0, likely: 0, max: 0 };
                     }
-                } catch (error) {
-                    console.error('Error fetching simulation:', error);
+
+                    return {
+                        min: categories.reduce((sum, category) => 
+                            sum + safeGetValue(metrics[category], ['min'], 0), 0),
+                        likely: categories.reduce((sum, category) => 
+                            sum + safeGetValue(metrics[category], ['likely'], 0), 0),
+                        max: categories.reduce((sum, category) => 
+                            sum + safeGetValue(metrics[category], ['max'], 0), 0)
+                    };
+                };
+
+                const plmTotal = calculateTotalLossMagnitude('primary_loss_magnitude');
+                const slmTotal = calculateTotalLossMagnitude('secondary_loss_magnitude');
+                
+                const simulationData = {
+                    tef: {
+                        min: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['threat_event_frequency', 'min'], 0),
+                        likely: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['threat_event_frequency', 'likely'], 0),
+                        max: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['threat_event_frequency', 'max'], 0)
+                    },
+                    vulnerability: {
+                        min: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['vulnerability', 'min'], 0),
+                        likely: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['vulnerability', 'likely'], 0),
+                        max: safeGetValue(riskState.historical_analysis.risk_metrics.primary_loss_event_frequency, ['vulnerability', 'max'], 0)
+                    },
+                    plm: plmTotal,
+                    slef: {
+                        min: safeGetValue(riskState.historical_analysis.risk_metrics.secondary_loss_event_frequency, ['SLEF', 'min'], 0),
+                        likely: safeGetValue(riskState.historical_analysis.risk_metrics.secondary_loss_event_frequency, ['SLEF', 'likely'], 0),
+                        max: safeGetValue(riskState.historical_analysis.risk_metrics.secondary_loss_event_frequency, ['SLEF', 'max'], 0)
+                    },
+                    slm: slmTotal
+                };
+
+                console.log('Sending simulation data:', simulationData);
+                
+                const response = await fetch('http://localhost:8000/api/simulate_risk', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(simulationData),
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setSimulationResults(data);
+                } else {
+                    const errorText = await response.text();
+                    console.error('Simulation request failed:', errorText);
                 }
+            } catch (error) {
+                console.error('Error fetching simulation:', error);
             }
         };
 
         fetchSimulation();
-    }, [riskState]);
+    }, [riskState?.historical_analysis]);
 
     return (
         <Box sx={{ width: '100%', mb: 4 }}>
@@ -238,7 +405,7 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                                 </Box>
                             ) : (
                                 <Stack spacing={2}>
-                                    {remediationStrategies.map((strategy, index) => (
+                                    {(remediationStrategies.length > 0 ? remediationStrategies : remediationRef.current).map((strategy, index) => (
                                         <Box key={index} sx={{ mb: 2 }}>
                                             <Typography variant="subtitle1" color="primary" gutterBottom>
                                                 {index + 1}. {strategy.title}
