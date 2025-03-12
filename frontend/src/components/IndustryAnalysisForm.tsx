@@ -6,6 +6,12 @@ import {
     Paper,
     Stack,
     Alert,
+    Table,
+    TableHead,
+    TableBody,
+    TableCell,
+    TableRow,
+    Button,
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { RiskState } from '../types';
@@ -16,13 +22,15 @@ interface Props {
     onAnalyze: () => Promise<void>;
     disabled?: boolean;
     loading?: boolean;
+    onContinue?: () => void;
 }
 
 export const IndustryAnalysisForm: React.FC<Props> = ({
     riskState,
     onAnalyze,
     disabled = false,
-    loading = false
+    loading = false,
+    onContinue
 }) => {
     const renderAnalysisDetails = () => {
         if (!riskState.industry_analysis) {
@@ -68,9 +76,9 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                             '& .MuiAlert-message': { p: 0 }
                         }}
                     >
-                        Average breach cost in {riskState.user_inputs.industry}: $4.35M (2023)
+                        Average breach cost in {riskState.user_inputs.industry}: ${(riskState.industry_analysis?.insights?.breach_cost?.amount || 0).toLocaleString()} ({riskState.industry_analysis?.insights?.breach_cost?.year})
                         <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
-                            Source: IBM Cost of a Data Breach Report 2023
+                            Source: {riskState.industry_analysis?.insights?.breach_cost?.source}
                         </Typography>
                     </Alert>
                     <Alert 
@@ -83,9 +91,11 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                             '& .MuiAlert-message': { p: 0 }
                         }}
                     >
-                        Primary attack vectors: Phishing (38%), Stolen Credentials (25%)
+                        Primary attack vectors: {riskState.industry_analysis?.insights?.attack_vectors?.map(vector => 
+                            `${vector.type} (${vector.percentage}%)`
+                        ).join(', ')}
                         <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
-                            Source: Verizon DBIR 2023
+                            Source: {riskState.industry_analysis?.insights?.attack_vectors?.[0]?.source}
                         </Typography>
                     </Alert>
                     <Alert 
@@ -98,53 +108,10 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                             '& .MuiAlert-message': { p: 0 }
                         }}
                     >
-                        Mean time to identify: 207 days, Mean time to contain: 70 days
+                        Mean time to identify: {riskState.industry_analysis?.insights?.response_times?.time_to_identify} days, 
+                        Mean time to contain: {riskState.industry_analysis?.insights?.response_times?.time_to_contain} days
                         <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
-                            Source: FBI IC3 Report 2023
-                        </Typography>
-                    </Alert>
-                </Box>
-
-                <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        Risk Metric Adjustments
-                    </Typography>
-                    <Alert 
-                        severity="error" 
-                        icon={false}
-                        sx={{ 
-                            mb: 2,
-                            backgroundColor: 'transparent',
-                            color: 'text.primary',
-                            '& .MuiAlert-message': { p: 0 }
-                        }}
-                    >
-                        Baseline represents the average risk metrics across all industries. Your industry's metrics are compared against this baseline to show relative risk levels.
-                    </Alert>
-                    <Alert 
-                        severity="success" 
-                        icon={false}
-                        sx={{ 
-                            mb: 1,
-                            color: 'text.primary',
-                            '& .MuiAlert-message': { p: 0 }
-                        }}
-                    >
-                        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                            Based on {riskState.user_inputs.industry} sector data, attack frequency is 15% higher than baseline
-                        </Typography>
-                    </Alert>
-                    <Alert 
-                        severity="success" 
-                        icon={false}
-                        sx={{ 
-                            mb: 1,
-                            color: 'text.primary',
-                            '& .MuiAlert-message': { p: 0 }
-                        }}
-                    >
-                        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                            {riskState.user_inputs.industry} sector breaches have 25% higher financial impact due to regulatory requirements and customer trust factors
+                            Source: {riskState.industry_analysis?.insights?.response_times?.source}
                         </Typography>
                     </Alert>
                 </Box>
@@ -163,21 +130,11 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                         }}
                     >
                         <Stack spacing={1}>
-                            <Typography variant="body1">
-                                • {riskState.user_inputs.location === 'ME' 
-                                    ? 'Business Email Compromise (BEC) - $300M in reported losses (2023)' 
-                                    : 'Business Email Compromise (BEC) - $150M in reported losses (2023)'}
-                            </Typography>
-                            <Typography variant="body1">
-                                • {riskState.user_inputs.location === 'ME' 
-                                    ? 'Ransomware - Average ransom demand of $850,000' 
-                                    : 'Ransomware - Average ransom demand of $500,000'}
-                            </Typography>
-                            <Typography variant="body1">
-                                • {riskState.user_inputs.location === 'ME' 
-                                    ? 'Data Breaches - 60% targeted financial institutions' 
-                                    : 'Data Breaches - 40% targeted financial institutions'}
-                            </Typography>
+                            {riskState.industry_analysis?.regional_cyber_crimes?.map((crime, index) => (
+                                <Typography key={index} variant="body1">
+                                    • {crime.crime_type} - {crime.statistics} ({crime.year})
+                                </Typography>
+                            ))}
                         </Stack>
                     </Alert>
                 </Box>
@@ -259,17 +216,28 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                         <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
                             {renderAnalysisDetails()}
                         </Box>
-                        <LoadingButton 
-                            onClick={onAnalyze}
-                            variant="contained" 
-                            color="primary"
-                            fullWidth
-                            loading={loading}
-                            disabled={disabled}
-                            sx={{ mt: 2 }}
-                        >
-                            Process Industry Analysis
-                        </LoadingButton>
+                        <Stack spacing={2} sx={{ mt: 2 }}>
+                            <LoadingButton 
+                                onClick={onAnalyze}
+                                variant="contained" 
+                                color="primary"
+                                fullWidth
+                                loading={loading}
+                                disabled={disabled}
+                            >
+                                Process Industry Analysis
+                            </LoadingButton>
+                            {riskState.industry_analysis && onContinue && (
+                                <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    fullWidth
+                                    onClick={onContinue}
+                                >
+                                    Continue to Historical Analysis
+                                </Button>
+                            )}
+                        </Stack>
                     </Paper>
                 </Grid>
             </Grid>

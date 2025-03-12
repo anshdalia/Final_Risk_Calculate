@@ -291,15 +291,21 @@ Compare these metrics against:
 2. Verizon Data Breach Investigations Report (DBIR) findings for {self.state.user_inputs['industry']}
 3. IBM Cost of a Data Breach Report metrics for {self.state.user_inputs['industry']}
 
-Consider:
-- Average breach costs for this industry and company size
-- Typical attack patterns and frequencies
-- Industry-specific vulnerability statistics
-- Regional factors for {self.state.user_inputs['location']}
-- Company size impact on likelihood and magnitude
+Consider and adjust values based on:
+- Average breach costs for this industry and company size (adjust breach_cost.amount accordingly)
+- Typical attack patterns and frequencies (adjust attack_vectors percentages based on DBIR data)
+- Industry-specific vulnerability statistics (adjust risk_metrics based on industry averages)
+- Regional factors for {self.state.user_inputs['location']} (include in regional_cyber_crimes)
+- Company size impact on likelihood and magnitude (scale metrics appropriately)
+- Top cyber crimes and their impact in {self.state.user_inputs['location']} (reflect in regional_cyber_crimes)
 
-Adjust ALL risk metrics based on these industry standards.
-Explain each significant deviation from industry averages.
+Important: Ensure all numerical values in the response reflect actual industry statistics and regional data.
+If a specific industry or region shows higher/lower metrics, adjust the values accordingly.
+
+Provide detailed analysis including:
+1. Industry-specific insights with current statistics (use real industry averages)
+2. Regional cyber crime trends and statistics (based on actual regional data)
+3. Risk metric adjustments based on industry standards (scale according to industry benchmarks)
 
 Format response as JSON with:
 {{
@@ -328,69 +334,93 @@ Format response as JSON with:
             "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
         }}
     }},
-    "industry_standards": [
+    "industry_insights": {{
+        "breach_cost": {{
+            "amount": float,
+            "year": int,
+            "source": str
+        }},
+        "attack_vectors": [
+            {{
+                "type": str,
+                "percentage": float,
+                "source": str
+            }}
+        ],
+        "response_times": {{
+            "time_to_identify": int,
+            "time_to_contain": int,
+            "source": str
+        }}
+    }},
+    "regional_cyber_crimes": [
         {{
-            "source": str,  # e.g. "IC3", "DBIR", or "IBM Report"
-            "metric": str,  # Which metric this applies to
-            "industry_average": str,  # The typical value/range for this industry
-            "company_comparison": str,  # How the company's value compares
-            "adjustment_explanation": str  # Why and how we adjusted the metric
+            "crime_type": str,
+            "statistics": str,
+            "year": int
         }}
     ]
 }}"""
-        
+
         try:
             # Get GPT-4-mini analysis
             response = self.gpt4_mini.generate(prompt)
             analysis = json.loads(response)
             
             # Log the changes
-            logger.info("=== Risk Metric Adjustments Based on Industry Standards ===")
+            logger.info("\n=== Industry Analysis Phase Changes ===")
             current_metrics = current_state['risk_metrics']
             new_metrics = analysis['risk_metrics']
             
+            # Calculate and log percentage changes for key metrics
+            def calculate_percentage_change(old_val, new_val):
+                return ((new_val - old_val) / old_val) * 100 if old_val != 0 else 0
+
             # Log PLEF changes
             logger.info("\nPrimary Loss Event Frequency Changes:")
             for metric_type in ['threat_event_frequency', 'vulnerability']:
-                for value_type in ['min', 'likely', 'max']:
-                    old_val = current_metrics['primary_loss_event_frequency'][metric_type][value_type]
-                    new_val = new_metrics['primary_loss_event_frequency'][metric_type][value_type]
-                    change = new_val - old_val
-                    direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
-                    logger.info(f"{metric_type} {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
-            
+                old_val = current_metrics['primary_loss_event_frequency'][metric_type]['likely']
+                new_val = new_metrics['primary_loss_event_frequency'][metric_type]['likely']
+                pct_change = calculate_percentage_change(old_val, new_val)
+                logger.info(f"{metric_type}: {old_val:.3f} -> {new_val:.3f} ({pct_change:+.1f}% change)")
+
             # Log SLEF changes
             logger.info("\nSecondary Loss Event Frequency Changes:")
-            for value_type in ['min', 'likely', 'max']:
-                old_val = current_metrics['secondary_loss_event_frequency']['SLEF'][value_type]
-                new_val = new_metrics['secondary_loss_event_frequency']['SLEF'][value_type]
-                change = new_val - old_val
-                direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
-                logger.info(f"SLEF {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
-            
+            old_val = current_metrics['secondary_loss_event_frequency']['SLEF']['likely']
+            new_val = new_metrics['secondary_loss_event_frequency']['SLEF']['likely']
+            pct_change = calculate_percentage_change(old_val, new_val)
+            logger.info(f"SLEF: {old_val:.3f} -> {new_val:.3f} ({pct_change:+.1f}% change)")
+
             # Log Loss Magnitude changes
             for magnitude_type in ['primary_loss_magnitude', 'secondary_loss_magnitude']:
                 logger.info(f"\n{magnitude_type.replace('_', ' ').title()} Changes:")
                 for category in ['productivity', 'response', 'replacement', 'competitive_advantage', 'fines_and_judgements', 'reputation']:
-                    for value_type in ['min', 'likely', 'max']:
-                        old_val = current_metrics[magnitude_type][category][value_type]
-                        new_val = new_metrics[magnitude_type][category][value_type]
-                        change = new_val - old_val
-                        direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
-                        logger.info(f"{category} {value_type}: ${old_val:,.2f} -> ${new_val:,.2f} ({direction} by ${abs(change):,.2f})")
+                    old_val = current_metrics[magnitude_type][category]['likely']
+                    new_val = new_metrics[magnitude_type][category]['likely']
+                    pct_change = calculate_percentage_change(old_val, new_val)
+                    logger.info(f"{category}: ${old_val:,.2f} -> ${new_val:,.2f} ({pct_change:+.1f}% change)")
+
+            # Log industry insights and regional cyber crimes
+            logger.info("\nIndustry Insights:")
+            logger.info(f"Breach Cost: ${analysis['industry_insights']['breach_cost']['amount']:,.2f} ({analysis['industry_insights']['breach_cost']['year']})")
+            logger.info("\nAttack Vectors:")
+            for vector in analysis['industry_insights']['attack_vectors']:
+                logger.info(f"- {vector['type']}: {vector['percentage']}%")
+            logger.info(f"\nResponse Times:")
+            logger.info(f"Time to Identify: {analysis['industry_insights']['response_times']['time_to_identify']} days")
+            logger.info(f"Time to Contain: {analysis['industry_insights']['response_times']['time_to_contain']} days")
+
+            logger.info("\nRegional Cyber Crimes:")
+            for crime in analysis['regional_cyber_crimes']:
+                logger.info(f"- {crime['crime_type']}: {crime['statistics']} ({crime['year']})")
+
+            logger.info("\n=====================================")
             
-            logger.info("\nIndustry Standard Comparisons:")
-            for std in analysis['industry_standards']:
-                logger.info(f"- [{std['source']}] {std['metric']}:")
-                logger.info(f"  Industry Average: {std['industry_average']}")
-                logger.info(f"  Company Status: {std['company_comparison']}")
-                logger.info(f"  Adjustment: {std['adjustment_explanation']}")
-            logger.info("=====================================")
-            
-            # Update state
+            # Update state with new metrics and analysis
             self.state.update_risk_metrics(**new_metrics)
             self.state.update_industry_analysis({
-                'standards': analysis['industry_standards']
+                'insights': analysis['industry_insights'],
+                'regional_cyber_crimes': analysis['regional_cyber_crimes']
             })
             
             return self.state.get_current_state()

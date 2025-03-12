@@ -93,7 +93,6 @@ function App() {
             setLoading(true);
             const result = await api.processIndustryAnalysis();
             setRiskState(result);
-            setActiveStep(3);
             setCompletedSteps([...completedSteps, 2]);
         } catch (error) {
             console.error('Error:', error);
@@ -186,6 +185,7 @@ function App() {
                             onAnalyze={handleIndustryAnalysis}
                             disabled={completedSteps.includes(2)}
                             loading={loading}
+                            onContinue={() => setActiveStep(3)}
                         />
                         <Paper sx={{ p: 3 }}>
                             <RiskMetricsDisplay 
