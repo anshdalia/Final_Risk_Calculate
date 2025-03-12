@@ -187,41 +187,38 @@ class HistoricalAnalyzer:
         logger.info(f"Found {len(results)} similar incidents")
         return results
 
-    def calculate_risk_adjustments(self, similar_incidents: List[Dict]) -> Dict:
-        """Calculate risk metric adjustments based on similar incidents"""
-        logger.info("Calculating risk adjustments from historical data")
-        
-        # Initialize adjustment factors
+    def calculate_risk_adjustments(self, similar_incidents: List[Dict[str, Any]]) -> Dict[str, float]:
+        """Calculate risk metric adjustments based on historical incidents."""
+        if not similar_incidents:
+            return {
+                'frequency_factor': 0.0,
+                'magnitude_factor': 1.0,
+                'confidence': 0.0
+            }
+
+        # Calculate frequency factor (normalized by total incidents)
+        total_incidents = len(similar_incidents)
+        frequency_factor = total_incidents / 100  # Normalize to baseline
+
+        # Calculate magnitude factor from financial impacts
+        financial_impacts = [inc.get('financial_impact', 0) for inc in similar_incidents if inc.get('financial_impact') is not None]
+        magnitude_factor = float(np.mean(financial_impacts) / 1000000) if financial_impacts else 1.0
+
+        # Calculate confidence based on similarity scores
+        similarity_scores = [inc.get('similarity_score', 0) for inc in similar_incidents]
+        confidence = float(np.mean(similarity_scores)) if similarity_scores else 0.0
+
         adjustments = {
-            'frequency_factor': 1.0,
-            'magnitude_factor': 1.0,
-            'confidence': 0.0
+            'frequency_factor': float(frequency_factor),  # Convert np.float64 to float
+            'magnitude_factor': float(magnitude_factor),  # Convert np.float64 to float
+            'confidence': float(confidence)  # Convert np.float64 to float
         }
-        
-        # Only use incidents with financial impact
-        incidents_with_impact = [
-            inc for inc in similar_incidents 
-            if inc['financial_impact'] is not None
-        ]
-        
-        if incidents_with_impact:
-            # Calculate average financial impact
-            impacts = [inc['financial_impact'] for inc in incidents_with_impact]
-            avg_impact = sum(impacts) / len(impacts)
-            
-            # Calculate magnitude factor based on historical impacts
-            adjustments['magnitude_factor'] = avg_impact / 1000000  # Normalize to millions
-            
-            # Calculate frequency factor based on similarity scores
-            similarity_scores = [inc['similarity_score'] for inc in similar_incidents]
-            adjustments['frequency_factor'] = sum(similarity_scores) / len(similarity_scores)
-            
-            # Calculate confidence based on number and similarity of matches
-            adjustments['confidence'] = min(
-                0.9,  # Cap at 90% confidence
-                (len(incidents_with_impact) / 3) * (sum(similarity_scores) / len(similarity_scores))
-            )
-        
+
+        # Handle any NaN values
+        for key in adjustments:
+            if np.isnan(adjustments[key]):
+                adjustments[key] = 0.0
+
         logger.info(f"Calculated adjustments: {adjustments}")
         return adjustments
 

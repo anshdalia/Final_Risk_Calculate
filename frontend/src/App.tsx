@@ -111,7 +111,6 @@ function App() {
             setLoading(true);
             const result = await api.processHistoricalAnalysis();
             setRiskState(result);
-            setActiveStep(4);
             setCompletedSteps([...completedSteps, 3]);
         } catch (error) {
             console.error('Error:', error);
@@ -212,40 +211,6 @@ function App() {
                                 selectedScenario={riskState.selected_scenario}
                             />
                         </Paper>
-                    </Stack>
-                )}
-
-                {activeStep === 4 && riskState && (
-                    <Stack spacing={3}>
-                        <Paper sx={{ p: 3 }}>
-                            <RiskMetricsDisplay 
-                                metrics={riskState.risk_metrics} 
-                                scenarios={riskState.scenarios}
-                                selectedScenario={riskState.selected_scenario}
-                            />
-                        </Paper>
-                        
-                        <Paper sx={{ p: 3 }}>
-                            <Typography variant="h6" gutterBottom>
-                                Remediation Suggestions
-                            </Typography>
-                            <Stack spacing={1}>
-                                {riskState.remediation_suggestions.map((suggestion, index) => (
-                                    <Typography key={index}>• {suggestion}</Typography>
-                                ))}
-                            </Stack>
-                        </Paper>
-
-                        {riskState.historical_analysis && (
-                            <Paper sx={{ p: 3 }}>
-                                <Typography variant="h6" gutterBottom>
-                                    Historical Analysis
-                                </Typography>
-                                <Typography component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
-                                    {JSON.stringify(riskState.historical_analysis, null, 2)}
-                                </Typography>
-                            </Paper>
-                        )}
                     </Stack>
                 )}
             </Stack>
