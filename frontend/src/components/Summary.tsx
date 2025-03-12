@@ -9,6 +9,8 @@ interface SummaryProps {
 interface RemediationStrategy {
     title: string;
     description: string;
+    impact: string;
+    implementation: string;
 }
 
 export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
@@ -24,14 +26,14 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        industry: riskState.industry,
+                        industry: riskState.user_inputs.industry,
                         location: riskState.user_inputs.location,
                         employees: riskState.user_inputs.employees,
                         revenue: riskState.user_inputs.revenue,
                         risk_factors: riskState.user_inputs.additional_factors,
                         risk_scenario: {
                             description: riskState.selected_scenario?.description,
-                            severity: riskState.selected_scenario?.severity_level,
+                            severity_level: riskState.selected_scenario?.severity_level,
                             potential_impact: riskState.selected_scenario?.potential_impact
                         }
                     })
@@ -42,22 +44,28 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                 }
 
                 const data = await response.json();
-                setRemediationStrategies(data.strategies);
+                setRemediationStrategies(data.remediation_strategies || []);
             } catch (error) {
                 console.error('Error fetching remediation strategies:', error);
                 // Fallback strategies in case of error
                 setRemediationStrategies([
                     {
                         title: "Technical Controls",
-                        description: "Implement advanced threat detection systems and regular security assessments."
+                        description: "Implement advanced threat detection systems and regular security assessments.",
+                        impact: "Significant reduction in risk of data breaches and unauthorized access.",
+                        implementation: "Requires investment in security tools and regular maintenance."
                     },
                     {
                         title: "Operational Procedures",
-                        description: "Establish incident response plans and conduct regular security training."
+                        description: "Establish incident response plans and conduct regular security training.",
+                        impact: "Improved response time to incidents and reduced human error risks.",
+                        implementation: "Requires dedicated training time and documentation effort."
                     },
                     {
                         title: "Risk Transfer",
-                        description: "Consider cyber insurance and third-party security services."
+                        description: "Consider cyber insurance and third-party security services.",
+                        impact: "Financial protection against major incidents and expert support.",
+                        implementation: "Requires budget allocation and vendor assessment."
                     }
                 ]);
             } finally {
@@ -112,12 +120,18 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                             ) : (
                                 <Stack spacing={2}>
                                     {remediationStrategies.map((strategy, index) => (
-                                        <Box key={index}>
+                                        <Box key={index} sx={{ mb: 2 }}>
                                             <Typography variant="subtitle1" color="primary" gutterBottom>
                                                 {index + 1}. {strategy.title}
                                             </Typography>
-                                            <Typography variant="body2" color="text.secondary">
+                                            <Typography variant="body2" paragraph>
                                                 {strategy.description}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                <strong>Impact:</strong> {strategy.impact}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                <strong>Implementation:</strong> {strategy.implementation}
                                             </Typography>
                                         </Box>
                                     ))}

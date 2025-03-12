@@ -68,11 +68,11 @@ interface HistoricalAnalysis {
 }
 
 export interface RiskState {
-    industry: string;
     risk_metrics: RiskMetrics;
     user_inputs: {
         revenue: number;
         employees: number;
+        industry: string;
         location: string;
         additional_factors: string[];
     };
