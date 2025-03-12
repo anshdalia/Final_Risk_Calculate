@@ -89,17 +89,21 @@ class HistoricalAnalyzer:
         """Calculate similarity score between incident and target criteria"""
         score = 0.0
         weights = {
-            'industry': 0.3,
-            'description': 0.4,
+            'industry': 0.4,  # Increased from 0.3
+            'description': 0.3,  # Decreased from 0.4
             'recency': 0.2,
             'size': 0.1
         }
         
-        # Industry similarity
-        if incident.get('organization', {}).get('industry', '').lower() == target_industry.lower():
-            score += weights['industry']
+        # Industry similarity - now more nuanced
+        incident_industry = incident.get('organization', {}).get('industry', '').lower()
+        target_industry = target_industry.lower()
+        if incident_industry == target_industry:
+            score += weights['industry']  # Exact match
+        elif any(word in incident_industry for word in target_industry.split()):
+            score += weights['industry'] * 0.7  # Partial match
         
-        # Description similarity using TF-IDF
+        # Description similarity using TF-IDF with minimum threshold
         if incident.get('incident', {}).get('description'):
             try:
                 tfidf_matrix = self.vectorizer.fit_transform([
@@ -107,17 +111,44 @@ class HistoricalAnalyzer:
                     incident['incident']['description']
                 ])
                 similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-                score += weights['description'] * similarity
+                # Apply a minimum threshold of 0.1 for description similarity
+                if similarity > 0.1:
+                    score += weights['description'] * similarity
             except:
                 pass
         
-        # Recency score
+        # Recency score with more granular decay
         if incident.get('date'):
             try:
                 incident_date = datetime.fromisoformat(incident['date'].split('T')[0])
                 years_old = (datetime.now() - incident_date).days / 365
-                recency_score = max(0, 1 - (years_old / 10))  # Linear decay over 10 years
+                # More granular decay: 
+                # - Less than 2 years: full score
+                # - 2-5 years: linear decay to 0.7
+                # - 5-10 years: linear decay to 0.3
+                # - Over 10 years: minimum 0.1
+                if years_old <= 2:
+                    recency_score = 1.0
+                elif years_old <= 5:
+                    recency_score = 1.0 - (0.3 * (years_old - 2) / 3)
+                elif years_old <= 10:
+                    recency_score = 0.7 - (0.4 * (years_old - 5) / 5)
+                else:
+                    recency_score = 0.1
                 score += weights['recency'] * recency_score
+            except:
+                pass
+        
+        # Company size similarity
+        # Assuming company_size is annual revenue in millions or employee count
+        incident_size = incident.get('organization', {}).get('size', 0)
+        if incident_size and company_size:
+            try:
+                # Calculate size difference ratio
+                size_ratio = min(incident_size, company_size) / max(incident_size, company_size)
+                # Apply sigmoid function to smooth the score
+                size_score = 1 / (1 + np.exp(-10 * (size_ratio - 0.5)))
+                score += weights['size'] * size_score
             except:
                 pass
         
@@ -204,14 +235,23 @@ class HistoricalAnalyzer:
         financial_impacts = [inc.get('financial_impact', 0) for inc in similar_incidents if inc.get('financial_impact') is not None]
         magnitude_factor = float(np.mean(financial_impacts) / 1000000) if financial_impacts else 1.0
 
-        # Calculate confidence based on similarity scores
+        # Calculate confidence based on similarity scores with minimum threshold
         similarity_scores = [inc.get('similarity_score', 0) for inc in similar_incidents]
-        confidence = float(np.mean(similarity_scores)) if similarity_scores else 0.0
+        if similarity_scores:
+            # Apply minimum threshold of 0.3 for confidence
+            base_confidence = float(np.mean(similarity_scores))
+            confidence = max(base_confidence, 0.3)  # Never go below 30% confidence
+            
+            # Boost confidence if we have multiple similar incidents
+            if len(similar_incidents) >= 2:
+                confidence = min(confidence * 1.2, 1.0)  # Boost by 20% but cap at 1.0
+        else:
+            confidence = 0.0
 
         adjustments = {
-            'frequency_factor': float(frequency_factor),  # Convert np.float64 to float
-            'magnitude_factor': float(magnitude_factor),  # Convert np.float64 to float
-            'confidence': float(confidence)  # Convert np.float64 to float
+            'frequency_factor': float(frequency_factor),
+            'magnitude_factor': float(magnitude_factor),
+            'confidence': float(confidence)
         }
 
         # Handle any NaN values
