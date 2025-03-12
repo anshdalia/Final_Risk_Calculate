@@ -2,33 +2,47 @@ import React, { useState } from 'react';
 import {
     Box,
     Button,
-    FormControl,
-    FormLabel,
+    Card,
+    CardContent,
+    Grid,
     TextField,
-    Stack,
     Typography,
-    Alert,
-    Snackbar,
     Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Divider,
+    Alert,
+    Snackbar
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+import { RiskState, Scenario } from '../types';
+import { ScenariosDisplay } from './RiskMetricsDisplay';
 
 interface Props {
     questions: string[];
+    riskState?: RiskState;  // Make riskState optional
     onSubmit: (answers: { [key: string]: string }) => void;
     disabled?: boolean;
-    initialValues?: { [key: string]: string };
 }
 
-export const DynamicQuestionsForm: React.FC<Props> = ({ 
-    questions, 
-    onSubmit, 
-    disabled = false,
-    initialValues = {} 
+export const DynamicQuestionsForm: React.FC<Props> = ({
+    questions,
+    riskState,
+    onSubmit,
+    disabled = false
 }) => {
-    const [answers, setAnswers] = useState<{ [key: string]: string }>(initialValues);
+    const [answers, setAnswers] = useState<{ [key: string]: string }>({});
     const [isLoading, setIsLoading] = useState(false);
-    const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+    const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' });
+
+    console.log('Questions prop in DynamicQuestionsForm:', questions);
+    console.log('RiskState in DynamicQuestionsForm:', riskState);
+    console.log('Risk State:', riskState);
+    console.log('Scenarios:', riskState?.scenarios);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,7 +57,7 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
             });
             return;
         }
-
+        
         setIsLoading(true);
         try {
             await onSubmit(answers);
@@ -63,10 +77,10 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
         }
     };
 
-    const handleAnswerChange = (question: string, answer: string) => {
+    const handleAnswerChange = (question: string, value: string) => {
         setAnswers(prev => ({
             ...prev,
-            [question]: answer
+            [question]: value
         }));
     };
 
@@ -74,45 +88,79 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
         return <Typography>No questions available</Typography>;
     }
 
+    const formatMetricValue = (value: number) => value?.toFixed(3) ?? 'N/A';
+    const formatCurrencyValue = (value: number) => value ? `$${value.toLocaleString()}` : 'N/A';
+
     return (
-        <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-                Dynamic Questions
+        <Box sx={{ width: '100%', mb: 4 }}>
+            {/* Top Section - Scenarios and Questions side by side */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                {/* Left Side - Scenarios */}
+                <Grid item xs={6}>
+                    <Paper sx={{ p: 2, height: '100%' }}>
+                        <Typography variant="h6" gutterBottom>Risk Scenarios</Typography>
+                        {riskState?.scenarios && (
+                            <ScenariosDisplay 
+                                scenarios={riskState.scenarios} 
+                                selectedScenario={riskState.selected_scenario}
+                            />
+                        )}
+                    </Paper>
+                </Grid>
+
+                {/* Right Side - Questions */}
+                <Grid item xs={6}>
+                    <Paper sx={{ p: 2, height: '100%' }}>
+                        <Typography variant="h6" gutterBottom>Dynamic Questions</Typography>
+                        <form onSubmit={handleSubmit}>
+                            {questions.map((question, index) => (
+                                <TextField
+                                    key={index}
+                                    fullWidth
+                                    multiline
+                                    rows={2}
+                                    label={`Question ${index + 1}`}
+                                    placeholder={question}
+                                    value={answers[question] || ''}
+                                    onChange={(e) => handleAnswerChange(question, e.target.value)}
+                                    sx={{ mb: 2 }}
+                                    disabled={disabled || isLoading}
+                                />
+                            ))}
+                            <LoadingButton 
+                                type="submit" 
+                                variant="contained" 
+                                color="primary"
+                                fullWidth
+                                loading={isLoading}
+                                disabled={disabled}
+                            >
+                                Submit Answers
+                            </LoadingButton>
+                        </form>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* Values Title */}
+            <Typography variant="h4" gutterBottom sx={{ textAlign: 'center', fontWeight: 500, mb: 4 }}>
+                Values After Phase 1: Initial Input
             </Typography>
-            <form onSubmit={handleSubmit}>
-                <Stack spacing={3}>
-                    {questions.map((question, index) => (
-                        <TextField
-                            key={index}
-                            label={question}
-                            value={answers[question] || ''}
-                            onChange={(e) => handleAnswerChange(question, e.target.value)}
-                            multiline
-                            rows={2}
-                            required
-                            disabled={disabled}
-                        />
-                    ))}
-                    <LoadingButton
-                        type="submit"
-                        variant="contained"
-                        disabled={disabled}
-                        loading={isLoading}
-                    >
-                        Submit Answers
-                    </LoadingButton>
-                </Stack>
-            </form>
 
             <Snackbar
                 open={toast.open}
                 autoHideDuration={3000}
-                onClose={() => setToast({ ...toast, open: false })}
+                onClose={() => setToast(prev => ({ ...prev, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
-                <Alert severity={toast.severity as 'success' | 'error' | 'warning'} onClose={() => setToast({ ...toast, open: false })}>
+                <Alert 
+                    onClose={() => setToast(prev => ({ ...prev, open: false }))} 
+                    severity={toast.severity}
+                    sx={{ width: '100%' }}
+                >
                     {toast.message}
                 </Alert>
             </Snackbar>
-        </Paper>
+        </Box>
     );
 }; 

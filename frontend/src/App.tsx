@@ -160,19 +160,12 @@ function App() {
 
                 {activeStep === 1 && riskState && (
                     <Stack spacing={3}>
-                        <Paper sx={{ p: 3 }}>
-                            <RiskMetricsDisplay 
-                                metrics={riskState.risk_metrics} 
-                                scenarios={riskState.scenarios}
-                                selectedScenario={riskState.selected_scenario}
-                                showMetrics={false}
-                            />
-                        </Paper>
+                        {console.log('Dynamic Questions in App:', riskState.dynamic_questions)}
                         <DynamicQuestionsForm
                             questions={riskState.dynamic_questions}
+                            riskState={riskState}
                             onSubmit={handleQuestionsSubmit}
                             disabled={loading || completedSteps.includes(1)}
-                            initialValues={riskState.question_answers}
                         />
                         <Paper sx={{ p: 3 }}>
                             <RiskMetricsDisplay 

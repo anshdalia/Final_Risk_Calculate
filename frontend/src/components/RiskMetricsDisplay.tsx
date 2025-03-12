@@ -15,7 +15,14 @@ import {
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import WarningIcon from '@mui/icons-material/Warning';
-import { RiskMetrics, RiskMetric } from '../types';
+import { 
+    RiskMetrics, 
+    RiskMetric, 
+    Scenario, 
+    PrimaryLossEventFrequency, 
+    SecondaryLossEventFrequency, 
+    LossMagnitude 
+} from '../types';
 
 interface Props {
     metrics: RiskMetrics;
@@ -63,7 +70,7 @@ const MetricRow: React.FC<{
 
 const MetricSection: React.FC<{
     title: string;
-    metrics: { [key: string]: RiskMetric };
+    metrics: PrimaryLossEventFrequency | SecondaryLossEventFrequency | LossMagnitude;
     isCurrency?: boolean;
 }> = ({ title, metrics, isCurrency = false }) => (
     <Box sx={{ mb: 3 }}>
@@ -94,52 +101,51 @@ const MetricSection: React.FC<{
     </Box>
 );
 
-const ScenariosDisplay: React.FC<{
+export interface ScenariosDisplayProps {
     scenarios: Array<Scenario>;
     selectedScenario: Scenario;
-}> = ({ scenarios, selectedScenario }) => (
-    <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Risk Scenarios</Typography>
-        <Stack spacing={2}>
-            {scenarios.map((scenario, index) => (
-                <Paper 
-                    key={index} 
-                    sx={{ 
-                        p: 2,
-                        border: scenario.description === selectedScenario.description ? 2 : 0,
-                        borderColor: 'primary.main'
-                    }}
-                >
-                    <Stack direction="row" spacing={2} alignItems="flex-start">
-                        <Box sx={{ pt: 0.5 }}>
-                            {scenario.severity_level === 'HIGH' ? (
-                                <WarningIcon color="error" />
-                            ) : (
-                                <InfoIcon color="info" />
-                            )}
-                        </Box>
-                        <Box sx={{ flexGrow: 1 }}>
-                            <Typography variant="subtitle1">
-                                Scenario {index + 1}:
-                            </Typography>
-                            <Typography variant="body1" sx={{ mb: 1 }}>
-                                {scenario.description}
-                            </Typography>
-                            <Alert severity={
-                                scenario.severity_level === 'HIGH' ? 'error' :
-                                scenario.severity_level === 'MEDIUM' ? 'warning' : 'info'
-                            } sx={{ mt: 1 }}>
-                                Severity Level: {scenario.severity_level}
-                            </Alert>
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                Potential Impact: {scenario.potential_impact}
-                            </Typography>
-                        </Box>
-                    </Stack>
-                </Paper>
-            ))}
-        </Stack>
-    </Box>
+}
+
+export const ScenariosDisplay: React.FC<ScenariosDisplayProps> = ({ scenarios, selectedScenario }) => (
+    <Stack spacing={2}>
+        {scenarios.map((scenario, index) => (
+            <Paper 
+                key={index} 
+                sx={{ 
+                    p: 2,
+                    border: scenario.description === selectedScenario.description ? 2 : 0,
+                    borderColor: 'primary.main'
+                }}
+            >
+                <Stack direction="row" spacing={2} alignItems="flex-start">
+                    <Box sx={{ pt: 0.5 }}>
+                        {scenario.severity_level === 'HIGH' ? (
+                            <WarningIcon color="error" />
+                        ) : (
+                            <InfoIcon color="info" />
+                        )}
+                    </Box>
+                    <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="subtitle1">
+                            Scenario {index + 1}:
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 1 }}>
+                            {scenario.description}
+                        </Typography>
+                        <Alert severity={
+                            scenario.severity_level === 'HIGH' ? 'error' :
+                            scenario.severity_level === 'MEDIUM' ? 'warning' : 'info'
+                        } sx={{ mt: 1 }}>
+                            Severity Level: {scenario.severity_level}
+                        </Alert>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                            Potential Impact: {scenario.potential_impact}
+                        </Typography>
+                    </Box>
+                </Stack>
+            </Paper>
+        ))}
+    </Stack>
 );
 
 export const RiskMetricsDisplay: React.FC<Props> = ({ 
@@ -152,7 +158,10 @@ export const RiskMetricsDisplay: React.FC<Props> = ({
     return (
         <Stack spacing={3} sx={{ width: '100%' }}>
             {showScenarios && (
-                <ScenariosDisplay scenarios={scenarios} selectedScenario={selectedScenario} />
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>Risk Scenarios</Typography>
+                    <ScenariosDisplay scenarios={scenarios} selectedScenario={selectedScenario} />
+                </Box>
             )}
 
             {showMetrics && (
