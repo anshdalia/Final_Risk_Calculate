@@ -11,6 +11,7 @@ from app.risk_processor import RiskProcessor
 from app.gpt4_mini_client import GPT4MiniClient
 import openai
 from .historical_analyzer import HistoricalAnalyzer
+from .risk_simulator import Calculator, OutputGenerator
 
 # Load environment variables
 load_dotenv()
@@ -77,6 +78,18 @@ class RemediationRequest(BaseModel):
     revenue: float
     risk_factors: Optional[List[str]] = None
     risk_scenario: RiskScenario
+
+class RiskValues(BaseModel):
+    min: float
+    likely: float
+    max: float
+
+class SimulationRequest(BaseModel):
+    tef: RiskValues
+    vulnerability: RiskValues
+    plm: RiskValues
+    slef: RiskValues
+    slm: RiskValues
 
 @app.post("/api/initial-input")
 async def process_initial_input(input_data: InitialInput):
@@ -214,6 +227,36 @@ async def test_remediation():
         
     except Exception as e:
         logger.error(f"Error in test endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/simulate_risk")
+async def simulate_risk(request: SimulationRequest):
+    try:
+        logger.info(f"Received simulation request: {request}")
+        
+        calculator = Calculator(
+            tef_min=request.tef.min,
+            tef_likely=request.tef.likely,
+            tef_max=request.tef.max,
+            vuln_min=request.vulnerability.min,
+            vuln_likely=request.vulnerability.likely,
+            vuln_max=request.vulnerability.max,
+            plm_min=request.plm.min,
+            plm_likely=request.plm.likely,
+            plm_max=request.plm.max,
+            slef_min=request.slef.min,
+            slef_likely=request.slef.likely,
+            slef_max=request.slef.max,
+            slm_min=request.slm.min,
+            slm_likely=request.slm.likely,
+            slm_max=request.slm.max
+        )
+        
+        results = calculator.run_simulation()
+        output_generator = OutputGenerator(results)
+        return output_generator.generate_histogram()
+    except Exception as e:
+        logger.error(f"Error in simulation: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
