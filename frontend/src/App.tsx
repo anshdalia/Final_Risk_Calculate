@@ -13,11 +13,11 @@ import {
     Stack,
     CircularProgress,
 } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
 import { InitialInputForm } from './components/InitialInputForm';
 import { DynamicQuestionsForm } from './components/DynamicQuestionsForm';
 import { IndustryAnalysisForm } from './components/IndustryAnalysisForm';
 import { RiskMetricsDisplay } from './components/RiskMetricsDisplay';
+import { HistoricalAnalysisForm } from './components/HistoricalAnalysisForm';
 import { api } from './api';
 import { RiskState } from './types';
 
@@ -160,7 +160,6 @@ function App() {
 
                 {activeStep === 1 && riskState && (
                     <Stack spacing={3}>
-                        {console.log('Dynamic Questions in App:', riskState.dynamic_questions)}
                         <DynamicQuestionsForm
                             questions={riskState.dynamic_questions}
                             riskState={riskState}
@@ -200,6 +199,12 @@ function App() {
 
                 {activeStep === 3 && riskState && (
                     <Stack spacing={3}>
+                        <HistoricalAnalysisForm
+                            riskState={riskState}
+                            onAnalyze={handleHistoricalAnalysis}
+                            disabled={completedSteps.includes(3)}
+                            loading={loading}
+                        />
                         <Paper sx={{ p: 3 }}>
                             <RiskMetricsDisplay 
                                 metrics={riskState.risk_metrics} 
@@ -207,16 +212,6 @@ function App() {
                                 selectedScenario={riskState.selected_scenario}
                             />
                         </Paper>
-                        <LoadingButton
-                            loading={loading}
-                            variant="contained"
-                            onClick={handleHistoricalAnalysis}
-                            disabled={completedSteps.includes(3)}
-                            fullWidth
-                            sx={{ maxWidth: 600, mx: 'auto' }}
-                        >
-                            Process Historical Analysis
-                        </LoadingButton>
                     </Stack>
                 )}
 

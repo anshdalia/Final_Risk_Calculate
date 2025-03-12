@@ -36,6 +36,34 @@ export interface Scenario {
     potential_impact: string;
 }
 
+interface HistoricalIncident {
+    date: string;
+    industry: string;
+    event_type: string;
+    description: string;
+    financial_impact: number | null;
+    affected_count: number | null;
+    similarity_score: number;
+}
+
+interface HistoricalAnalysisSummary {
+    total_matches: number;
+    avg_financial_impact: number;
+    most_common_type: string;
+}
+
+interface RiskAdjustments {
+    frequency_factor: number;
+    magnitude_factor: number;
+    confidence: number;
+}
+
+interface HistoricalAnalysis {
+    similar_incidents: HistoricalIncident[];
+    risk_adjustments: RiskAdjustments;
+    summary: HistoricalAnalysisSummary;
+}
+
 export interface RiskState {
     risk_metrics: RiskMetrics;
     user_inputs: {
@@ -50,7 +78,7 @@ export interface RiskState {
     dynamic_questions: string[];
     question_answers: { [key: string]: string };
     industry_analysis: any;
-    historical_analysis: any;
+    historical_analysis: HistoricalAnalysis;
     remediation_suggestions: string[];
 }
 

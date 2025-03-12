@@ -13,7 +13,7 @@ import {
     TableRow,
     Button,
 } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
+import LoadingButton from '@mui/lab/LoadingButton';
 import { RiskState } from '../types';
 import { ScenariosDisplay } from './RiskMetricsDisplay';
 

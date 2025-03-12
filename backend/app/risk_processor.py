@@ -430,35 +430,64 @@ Format response as JSON with:
             raise
     
     def process_historical_data(self) -> Dict:
-        """Step 4: Analyze historical data and generate remediation"""
-        # Get similar historical incidents
-        similar_incidents = self.historical_analyzer.get_similar_incidents(
-            self.state.selected_scenario['description'],
-            self.state.user_inputs['industry']
+        """Step 4: Analyze historical data and adjust risk metrics"""
+        logger.info("Processing historical analysis")
+        
+        # Get historical analysis
+        analysis = self.historical_analyzer.get_historical_analysis(
+            target_industry=self.state.user_inputs['industry'],
+            target_scenario=self.state.selected_scenario['description'],
+            company_size=self.state.user_inputs['employees']
         )
         
-        # Generate prompt for GPT-4-mini
-        prompt = f"""As a cybersecurity risk analyst, analyze:
-        Current Risk Metrics: {json.dumps(self.state.get_current_state()['risk_metrics'])}
-        Similar Historical Incidents: {json.dumps(similar_incidents, indent=2)}
+        # Get current risk metrics
+        current_metrics = self.state.risk_metrics
         
-        Based on this data:
-        1. Adjust the PLEF, SLEF, PLEM, SLEM values
-        2. Generate 3 specific remediation suggestions
-        3. Summarize historical trends
+        # Apply risk adjustments
+        adjustments = analysis['risk_adjustments']
+        new_metrics = {
+            "primary_loss_event_frequency": {
+                "threat_event_frequency": {
+                    "min": current_metrics["primary_loss_event_frequency"]["threat_event_frequency"]["min"] * adjustments['frequency_factor'],
+                    "likely": current_metrics["primary_loss_event_frequency"]["threat_event_frequency"]["likely"] * adjustments['frequency_factor'],
+                    "max": current_metrics["primary_loss_event_frequency"]["threat_event_frequency"]["max"] * adjustments['frequency_factor'],
+                    "confidence": adjustments['confidence']
+                },
+                "vulnerability": current_metrics["primary_loss_event_frequency"]["vulnerability"]
+            },
+            "secondary_loss_event_frequency": {
+                "SLEF": {
+                    "min": current_metrics["secondary_loss_event_frequency"]["SLEF"]["min"] * adjustments['frequency_factor'],
+                    "likely": current_metrics["secondary_loss_event_frequency"]["SLEF"]["likely"] * adjustments['frequency_factor'],
+                    "max": current_metrics["secondary_loss_event_frequency"]["SLEF"]["max"] * adjustments['frequency_factor'],
+                    "confidence": adjustments['confidence']
+                }
+            }
+        }
         
-        Format response as JSON with keys: risk_metrics, remediations, trends"""
+        # Adjust loss magnitudes based on historical data
+        for magnitude_type in ["primary_loss_magnitude", "secondary_loss_magnitude"]:
+            new_metrics[magnitude_type] = {}
+            for category in current_metrics[magnitude_type]:
+                new_metrics[magnitude_type][category] = {
+                    "min": current_metrics[magnitude_type][category]["min"] * adjustments['magnitude_factor'],
+                    "likely": current_metrics[magnitude_type][category]["likely"] * adjustments['magnitude_factor'],
+                    "max": current_metrics[magnitude_type][category]["max"] * adjustments['magnitude_factor'],
+                    "confidence": adjustments['confidence']
+                }
         
-        # Get GPT-4-mini analysis
-        response = self.gpt4_mini.generate(prompt)
-        analysis = json.loads(response)
+        # Log the changes
+        logger.info("\n=== Historical Analysis Phase Changes ===")
+        logger.info(f"Found {len(analysis['similar_incidents'])} similar incidents")
+        logger.info(f"Average financial impact: ${analysis['summary']['avg_financial_impact']:,.2f}")
+        logger.info(f"Most common event type: {analysis['summary']['most_common_type']}")
+        logger.info(f"\nRisk Adjustments:")
+        logger.info(f"Frequency factor: {adjustments['frequency_factor']:.2f}")
+        logger.info(f"Magnitude factor: {adjustments['magnitude_factor']:.2f}")
+        logger.info(f"Confidence: {adjustments['confidence']:.2f}")
         
         # Update state
-        self.state.update_risk_metrics(**analysis['risk_metrics'])
-        self.state.set_remediation_suggestions(analysis['remediations'])
-        self.state.update_historical_analysis({
-            'similar_incidents': similar_incidents,
-            'trends': analysis['trends']
-        })
+        self.state.update_risk_metrics(**new_metrics)
+        self.state.update_historical_analysis(analysis)
         
         return self.state.get_current_state() 
