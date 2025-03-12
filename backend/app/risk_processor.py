@@ -16,75 +16,62 @@ class RiskProcessor:
     def process_initial_input(self, revenue: float, employees: int, 
                             industry: str, location: str, 
                             additional_factors: List[str] = None) -> Dict:
-        """Step 1: Process initial input and generate scenarios"""
+        """Step 1: Process initial input and get initial GPT estimates"""
         # Store user inputs
         self.state.set_user_inputs(revenue, employees, industry, 
                                  location, additional_factors)
         
-        # Generate prompt for GPT-4-mini
-        prompt = f"""As a cybersecurity risk analyst following ISO 27001 and FAIR methodology, analyze:
+        # Generate prompt for GPT-4-mini to get initial estimates
+        prompt = f"""As a cybersecurity risk analyst, estimate ALL initial risk metrics for:
         Industry: {industry}
         Location: {location}
         Company Size: {employees} employees
         Revenue: ${revenue:,.2f}
         Additional Factors: {', '.join(additional_factors or [])}
         
-        Provide a JSON response with the following structure:
+        Provide comprehensive initial risk estimates for ALL metrics, considering the company profile.
+        Include 6 specific questions about their security measures that would help refine these estimates.
+        
+        Format response as JSON with:
         {{
-            "scenarios": [
-                {{ 
-                    "description": "Most severe scenario description",
-                    "severity_level": "HIGH",
-                    "potential_impact": "Description of potential impact"
-                }},
-                {{ 
-                    "description": "Medium severity scenario description",
-                    "severity_level": "MEDIUM",
-                    "potential_impact": "Description of potential impact"
-                }},
-                {{ 
-                    "description": "Lowest severity scenario description",
-                    "severity_level": "LOW",
-                    "potential_impact": "Description of potential impact"
-                }}
-            ],
-            "selected_scenario": {{
-                "description": "Description of highest severity scenario (same as first scenario)",
-                "severity_level": "HIGH",
-                "potential_impact": "Description of potential impact"
-            }},
             "risk_metrics": {{
                 "primary_loss_event_frequency": {{
-                    "threat_event_frequency": {{ "min": 0.1, "likely": 0.3, "max": 0.5, "confidence": 0.8 }},
-                    "vulnerability": {{ "min": 0.2, "likely": 0.4, "max": 0.6, "confidence": 0.7 }}
+                    "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "vulnerability": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                 }},
                 "secondary_loss_event_frequency": {{
-                    "SLEF": {{ "min": 0.1, "likely": 0.2, "max": 0.4, "confidence": 0.7 }}
+                    "SLEF": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                 }},
                 "primary_loss_magnitude": {{
-                    "productivity": {{ "min": 50000, "likely": 100000, "max": 200000, "confidence": 0.8 }},
-                    "response": {{ "min": 25000, "likely": 50000, "max": 100000, "confidence": 0.7 }},
-                    "replacement": {{ "min": 10000, "likely": 25000, "max": 50000, "confidence": 0.9 }},
-                    "competitive_advantage": {{ "min": 5000, "likely": 15000, "max": 30000, "confidence": 0.6 }},
-                    "fines_and_judgements": {{ "min": 100000, "likely": 250000, "max": 500000, "confidence": 0.8 }},
-                    "reputation": {{ "min": 200000, "likely": 400000, "max": 800000, "confidence": 0.7 }}
+                    "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                 }},
                 "secondary_loss_magnitude": {{
-                    "productivity": {{ "min": 25000, "likely": 50000, "max": 100000, "confidence": 0.7 }},
-                    "response": {{ "min": 10000, "likely": 25000, "max": 50000, "confidence": 0.8 }},
-                    "replacement": {{ "min": 5000, "likely": 15000, "max": 30000, "confidence": 0.7 }},
-                    "competitive_advantage": {{ "min": 2500, "likely": 7500, "max": 15000, "confidence": 0.6 }},
-                    "fines_and_judgements": {{ "min": 50000, "likely": 125000, "max": 250000, "confidence": 0.7 }},
-                    "reputation": {{ "min": 100000, "likely": 200000, "max": 400000, "confidence": 0.6 }}
+                    "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                 }}
             }},
+            "explanation": "Detailed explanation of your estimates, including industry factors and size considerations",
+            "scenarios": [
+                {{ "description": str, "severity_level": "HIGH", "potential_impact": str }},
+                {{ "description": str, "severity_level": "MEDIUM", "potential_impact": str }},
+                {{ "description": str, "severity_level": "LOW", "potential_impact": str }}
+            ],
             "questions": [
-                "Question 1?",
-                "Question 2?",
-                "Question 3?",
-                "Question 4?",
-                "Question 5?",
-                "Question 6?"
+                "Question about security controls?",
+                "Question about incident history?",
+                "Question about data protection?",
+                "Question about response plans?",
+                "Question about training?",
+                "Question about technical measures?"
             ]
         }}"""
         
@@ -93,130 +80,324 @@ class RiskProcessor:
             response = self.gpt4_mini.generate(prompt)
             analysis = json.loads(response)
             
-            # Log the scenarios we received
-            logger.info(f"Received scenarios from GPT: {json.dumps(analysis.get('scenarios', []), indent=2)}")
-            logger.info(f"Selected scenario: {json.dumps(analysis.get('selected_scenario', {}), indent=2)}")
+            # Log initial estimates
+            logger.info("=== Initial GPT Risk Estimates ===")
+            logger.info(f"Company Profile: {industry} company, {employees} employees")
+            logger.info(f"Risk Factors: {', '.join(additional_factors or [])}")
+            logger.info("\nInitial Risk Metrics:")
+            logger.info(json.dumps(analysis['risk_metrics'], indent=2))
+            logger.info(f"\nExplanation: {analysis['explanation']}")
+            logger.info("\nDynamic Questions:")
+            for i, q in enumerate(analysis['questions'], 1):
+                logger.info(f"{i}. {q}")
+            logger.info("=====================================")
             
-            # Update state with GPT-4-mini analysis
+            # Update state
             self.state.set_selected_scenario(
                 analysis['scenarios'],
-                analysis['selected_scenario']['description'],
-                analysis['selected_scenario']['severity_level'],
-                analysis['selected_scenario']['potential_impact']
+                analysis['scenarios'][0]['description'],
+                analysis['scenarios'][0]['severity_level'],
+                analysis['scenarios'][0]['potential_impact']
             )
             
-            # Extract risk metrics from the response
-            risk_metrics = analysis.get('risk_metrics', {})
+            # Store ALL initial metrics
+            self.state.update_risk_metrics(**analysis['risk_metrics'])
             
-            # Update risk metrics with proper structure
-            self.state.update_risk_metrics(
-                primary_loss_event_frequency=risk_metrics.get('primary_loss_event_frequency', {
-                    'threat_event_frequency': {'min': 0.1, 'likely': 0.3, 'max': 0.5, 'confidence': 0.8},
-                    'vulnerability': {'min': 0.2, 'likely': 0.4, 'max': 0.6, 'confidence': 0.7}
-                }),
-                secondary_loss_event_frequency=risk_metrics.get('secondary_loss_event_frequency', {
-                    'SLEF': {'min': 0.1, 'likely': 0.2, 'max': 0.4, 'confidence': 0.7}
-                }),
-                primary_loss_magnitude=risk_metrics.get('primary_loss_magnitude', {
-                    'productivity': {'min': 50000, 'likely': 100000, 'max': 200000, 'confidence': 0.8},
-                    'response': {'min': 25000, 'likely': 50000, 'max': 100000, 'confidence': 0.7},
-                    'replacement': {'min': 10000, 'likely': 25000, 'max': 50000, 'confidence': 0.9},
-                    'competitive_advantage': {'min': 5000, 'likely': 15000, 'max': 30000, 'confidence': 0.6},
-                    'fines_and_judgements': {'min': 100000, 'likely': 250000, 'max': 500000, 'confidence': 0.8},
-                    'reputation': {'min': 200000, 'likely': 400000, 'max': 800000, 'confidence': 0.7}
-                }),
-                secondary_loss_magnitude=risk_metrics.get('secondary_loss_magnitude', {
-                    'productivity': {'min': 25000, 'likely': 50000, 'max': 100000, 'confidence': 0.7},
-                    'response': {'min': 10000, 'likely': 25000, 'max': 50000, 'confidence': 0.8},
-                    'replacement': {'min': 5000, 'likely': 15000, 'max': 30000, 'confidence': 0.7},
-                    'competitive_advantage': {'min': 2500, 'likely': 7500, 'max': 15000, 'confidence': 0.6},
-                    'fines_and_judgements': {'min': 50000, 'likely': 125000, 'max': 250000, 'confidence': 0.7},
-                    'reputation': {'min': 100000, 'likely': 200000, 'max': 400000, 'confidence': 0.6}
-                })
-            )
-            
-            self.state.set_dynamic_questions(analysis.get('questions', [
-                "What security controls are currently in place?",
-                "Has the organization experienced similar incidents in the past?",
-                "What is the current backup strategy?",
-                "Are there incident response plans in place?",
-                "What is the level of security awareness training?",
-                "How often are systems patched?"
-            ]))
+            # Store questions
+            self.state.set_dynamic_questions(analysis['questions'])
             
             return self.state.get_current_state()
             
-        except json.JSONDecodeError as e:
-            raise Exception(f"Failed to parse GPT-4-mini response: {str(e)}")
-        except KeyError as e:
-            raise Exception(f"Missing required field in GPT-4-mini response: {str(e)}")
         except Exception as e:
-            raise Exception(f"Error processing initial input: {str(e)}")
+            logger.error(f"Error getting initial estimates: {str(e)}")
+            raise
+    
+    def _calculate_initial_tef(self, industry: str, employees: int, additional_factors: List[str] = None) -> Dict:
+        """Calculate initial threat event frequency based on inputs"""
+        # Base TEF by industry
+        industry_base_tef = {
+            "Technology": 0.4,
+            "Healthcare": 0.5,
+            "Finance": 0.6,
+            "Retail": 0.3,
+            "Manufacturing": 0.2
+        }.get(industry, 0.3)  # Default to 0.3 for unknown industries
+        
+        # Adjust for company size
+        size_factor = 1 + (employees / 1000)  # Increases with company size
+        
+        # Adjust for risk factors
+        risk_factor = 1.0
+        if additional_factors:
+            if "Remote workforce" in additional_factors:
+                risk_factor *= 1.2
+            if "Cloud infrastructure" in additional_factors:
+                risk_factor *= 1.1
+            if "Customer PII data" in additional_factors:
+                risk_factor *= 1.3
+        
+        # Calculate final TEF
+        likely_tef = min(industry_base_tef * size_factor * risk_factor, 0.9)
+        
+        return {
+            "min": max(0.1, likely_tef * 0.7),
+            "likely": likely_tef,
+            "max": min(1.0, likely_tef * 1.3),
+            "confidence": 0.8
+        }
+    
+    def _calculate_initial_vulnerability(self, additional_factors: List[str] = None) -> Dict:
+        """Calculate initial vulnerability based on risk factors"""
+        base_vuln = 0.3  # Base vulnerability
+        
+        # Adjust for risk factors
+        if additional_factors:
+            if "Remote workforce" in additional_factors:
+                base_vuln += 0.1
+            if "Cloud infrastructure" in additional_factors:
+                base_vuln += 0.05
+            if "Customer PII data" in additional_factors:
+                base_vuln += 0.15
+        
+        likely_vuln = min(base_vuln, 0.9)
+        
+        return {
+            "min": max(0.1, likely_vuln * 0.7),
+            "likely": likely_vuln,
+            "max": min(1.0, likely_vuln * 1.3),
+            "confidence": 0.7
+        }
     
     def process_dynamic_questions(self, answers: Dict[str, str]) -> Dict:
-        """Step 2: Process answers to dynamic questions"""
+        """Step 2: Process answers and adjust risk metrics"""
         # Store answers
         for question, answer in answers.items():
             self.state.add_question_answer(question, answer)
         
-        # Generate prompt for GPT-4-mini to analyze answers
-        prompt = f"""As a cybersecurity risk analyst, analyze these answers:
+        # Get current metrics for comparison
+        current_metrics = self.state.get_current_state()['risk_metrics']
         
-        All Potential Scenarios:
-        1. {self.state.scenarios[0]['description']}
-        2. {self.state.scenarios[1]['description']}
-        3. {self.state.scenarios[2]['description']}
+        # Generate prompt for GPT-4-mini
+        prompt = f"""As a cybersecurity risk analyst, review these security measures and adjust ALL risk metrics:
         
-        Selected High-Risk Scenario for Analysis:
-        {self.state.selected_scenario['description']}
-        Risk Level: {self.state.selected_scenario['severity_level']}
-        Potential Impact: {self.state.selected_scenario['potential_impact']}
+        Current Risk Metrics:
+        {json.dumps(current_metrics, indent=2)}
         
-        Current Risk Metrics: {json.dumps(self.state.get_current_state()['risk_metrics'])}
-        
-        Questions and Answers:
+        Security Measures Implemented:
         {json.dumps(answers, indent=2)}
         
-        Based on these answers, adjust the PLEF, SLEF, PLEM, SLEM values.
-        Explain your adjustments.
-        Format response as JSON with keys: risk_metrics, explanation"""
+        Based on these security measures, adjust ALL risk metrics.
+        Explain specifically how each measure affects the metrics.
+        
+        Format response as JSON with:
+        {{
+            "risk_metrics": {{
+                "primary_loss_event_frequency": {{
+                    "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "vulnerability": {{ "min": float, "likely": float, "max": float, "confidence": float }}
+                }},
+                "secondary_loss_event_frequency": {{
+                    "SLEF": {{ "min": float, "likely": float, "max": float, "confidence": float }}
+                }},
+                "primary_loss_magnitude": {{
+                    "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
+                }},
+                "secondary_loss_magnitude": {{
+                    "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
+                }}
+            }},
+            "adjustments": [
+                {{ "measure": str, "metric": str, "impact": str, "effect": str }}
+            ]
+        }}"""
         
         # Get GPT-4-mini analysis
         response = self.gpt4_mini.generate(prompt)
         analysis = json.loads(response)
         
-        # Update risk metrics
-        self.state.update_risk_metrics(**analysis['risk_metrics'])
+        # Log the changes
+        logger.info("=== Risk Metric Adjustments Based on Security Measures ===")
+        new_metrics = analysis['risk_metrics']
+        
+        # Log PLEF changes
+        logger.info("\nPrimary Loss Event Frequency Changes:")
+        for metric_type in ['threat_event_frequency', 'vulnerability']:
+            for value_type in ['min', 'likely', 'max']:
+                old_val = current_metrics['primary_loss_event_frequency'][metric_type][value_type]
+                new_val = new_metrics['primary_loss_event_frequency'][metric_type][value_type]
+                change = new_val - old_val
+                direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
+                logger.info(f"{metric_type} {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
+        
+        # Log SLEF changes
+        logger.info("\nSecondary Loss Event Frequency Changes:")
+        for value_type in ['min', 'likely', 'max']:
+            old_val = current_metrics['secondary_loss_event_frequency']['SLEF'][value_type]
+            new_val = new_metrics['secondary_loss_event_frequency']['SLEF'][value_type]
+            change = new_val - old_val
+            direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
+            logger.info(f"SLEF {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
+        
+        # Log Loss Magnitude changes
+        for magnitude_type in ['primary_loss_magnitude', 'secondary_loss_magnitude']:
+            logger.info(f"\n{magnitude_type.replace('_', ' ').title()} Changes:")
+            for category in ['productivity', 'response', 'replacement', 'competitive_advantage', 'fines_and_judgements', 'reputation']:
+                for value_type in ['min', 'likely', 'max']:
+                    old_val = current_metrics[magnitude_type][category][value_type]
+                    new_val = new_metrics[magnitude_type][category][value_type]
+                    change = new_val - old_val
+                    direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
+                    logger.info(f"{category} {value_type}: ${old_val:,.2f} -> ${new_val:,.2f} ({direction} by ${abs(change):,.2f})")
+        
+        logger.info("\nAdjustment Explanations:")
+        for adj in analysis['adjustments']:
+            logger.info(f"- {adj['measure']} -> {adj['metric']}: {adj['impact']} ({adj['effect']})")
+        logger.info("=====================================")
+        
+        # Update ALL metrics
+        self.state.update_risk_metrics(**new_metrics)
         
         return self.state.get_current_state()
     
     def process_industry_reports(self) -> Dict:
-        """Step 3: Analyze industry reports and trends"""
-        # Get historical analysis
-        risk_factors = self.historical_analyzer.calculate_risk_factors(
-            self.state.user_inputs['industry'],
-            None,  # NAICS code could be added later
-            self.state.user_inputs['employees']
-        )
+        """Step 3: Compare against industry standards and adjust metrics"""
+        # Get current state after security measures
+        current_state = self.state.get_current_state()
         
         # Generate prompt for GPT-4-mini
-        prompt = f"""As a cybersecurity risk analyst, analyze this industry data:
-        Current Risk Metrics: {json.dumps(self.state.get_current_state()['risk_metrics'])}
-        Historical Analysis: {json.dumps(risk_factors, indent=2)}
+        prompt = f"""As a cybersecurity risk analyst, analyze this company's risk profile against industry standards:
+
+Company Profile:
+Industry: {self.state.user_inputs['industry']}
+Location: {self.state.user_inputs['location']}
+Size: {self.state.user_inputs['employees']} employees
+Revenue: ${self.state.user_inputs['revenue']:,.2f}
+
+Current Risk Metrics (after security measures assessment):
+{json.dumps(current_state['risk_metrics'], indent=2)}
+
+Compare these metrics against:
+1. FBI Internet Crime Report (IC3) {self.state.user_inputs['industry']} statistics
+2. Verizon Data Breach Investigations Report (DBIR) findings for {self.state.user_inputs['industry']}
+3. IBM Cost of a Data Breach Report metrics for {self.state.user_inputs['industry']}
+
+Consider:
+- Average breach costs for this industry and company size
+- Typical attack patterns and frequencies
+- Industry-specific vulnerability statistics
+- Regional factors for {self.state.user_inputs['location']}
+- Company size impact on likelihood and magnitude
+
+Adjust ALL risk metrics based on these industry standards.
+Explain each significant deviation from industry averages.
+
+Format response as JSON with:
+{{
+    "risk_metrics": {{
+        "primary_loss_event_frequency": {{
+            "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "vulnerability": {{ "min": float, "likely": float, "max": float, "confidence": float }}
+        }},
+        "secondary_loss_event_frequency": {{
+            "SLEF": {{ "min": float, "likely": float, "max": float, "confidence": float }}
+        }},
+        "primary_loss_magnitude": {{
+            "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
+        }},
+        "secondary_loss_magnitude": {{
+            "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+            "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
+        }}
+    }},
+    "industry_standards": [
+        {{
+            "source": str,  # e.g. "IC3", "DBIR", or "IBM Report"
+            "metric": str,  # Which metric this applies to
+            "industry_average": str,  # The typical value/range for this industry
+            "company_comparison": str,  # How the company's value compares
+            "adjustment_explanation": str  # Why and how we adjusted the metric
+        }}
+    ]
+}}"""
         
-        Based on this industry data, adjust the PLEF, SLEF, PLEM, SLEM values.
-        Explain your adjustments.
-        Format response as JSON with keys: risk_metrics, explanation"""
-        
-        # Get GPT-4-mini analysis
-        response = self.gpt4_mini.generate(prompt)
-        analysis = json.loads(response)
-        
-        # Update state
-        self.state.update_risk_metrics(**analysis['risk_metrics'])
-        self.state.update_industry_analysis(risk_factors)
-        
-        return self.state.get_current_state()
+        try:
+            # Get GPT-4-mini analysis
+            response = self.gpt4_mini.generate(prompt)
+            analysis = json.loads(response)
+            
+            # Log the changes
+            logger.info("=== Risk Metric Adjustments Based on Industry Standards ===")
+            current_metrics = current_state['risk_metrics']
+            new_metrics = analysis['risk_metrics']
+            
+            # Log PLEF changes
+            logger.info("\nPrimary Loss Event Frequency Changes:")
+            for metric_type in ['threat_event_frequency', 'vulnerability']:
+                for value_type in ['min', 'likely', 'max']:
+                    old_val = current_metrics['primary_loss_event_frequency'][metric_type][value_type]
+                    new_val = new_metrics['primary_loss_event_frequency'][metric_type][value_type]
+                    change = new_val - old_val
+                    direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
+                    logger.info(f"{metric_type} {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
+            
+            # Log SLEF changes
+            logger.info("\nSecondary Loss Event Frequency Changes:")
+            for value_type in ['min', 'likely', 'max']:
+                old_val = current_metrics['secondary_loss_event_frequency']['SLEF'][value_type]
+                new_val = new_metrics['secondary_loss_event_frequency']['SLEF'][value_type]
+                change = new_val - old_val
+                direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
+                logger.info(f"SLEF {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
+            
+            # Log Loss Magnitude changes
+            for magnitude_type in ['primary_loss_magnitude', 'secondary_loss_magnitude']:
+                logger.info(f"\n{magnitude_type.replace('_', ' ').title()} Changes:")
+                for category in ['productivity', 'response', 'replacement', 'competitive_advantage', 'fines_and_judgements', 'reputation']:
+                    for value_type in ['min', 'likely', 'max']:
+                        old_val = current_metrics[magnitude_type][category][value_type]
+                        new_val = new_metrics[magnitude_type][category][value_type]
+                        change = new_val - old_val
+                        direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
+                        logger.info(f"{category} {value_type}: ${old_val:,.2f} -> ${new_val:,.2f} ({direction} by ${abs(change):,.2f})")
+            
+            logger.info("\nIndustry Standard Comparisons:")
+            for std in analysis['industry_standards']:
+                logger.info(f"- [{std['source']}] {std['metric']}:")
+                logger.info(f"  Industry Average: {std['industry_average']}")
+                logger.info(f"  Company Status: {std['company_comparison']}")
+                logger.info(f"  Adjustment: {std['adjustment_explanation']}")
+            logger.info("=====================================")
+            
+            # Update state
+            self.state.update_risk_metrics(**new_metrics)
+            self.state.update_industry_analysis({
+                'standards': analysis['industry_standards']
+            })
+            
+            return self.state.get_current_state()
+            
+        except Exception as e:
+            logger.error(f"Error processing industry standards: {str(e)}")
+            raise
     
     def process_historical_data(self) -> Dict:
         """Step 4: Analyze historical data and generate remediation"""
