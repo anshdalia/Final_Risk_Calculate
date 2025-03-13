@@ -227,20 +227,37 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                     tef: {
                         min: metrics.primary_loss_event_frequency.threat_event_frequency.min,
                         likely: metrics.primary_loss_event_frequency.threat_event_frequency.likely,
-                        max: metrics.primary_loss_event_frequency.threat_event_frequency.max
+                        max: metrics.primary_loss_event_frequency.threat_event_frequency.max,
+                        confidence: mapConfidenceToString(metrics.primary_loss_event_frequency.threat_event_frequency.confidence)
                     },
                     vul: {
                         min: metrics.primary_loss_event_frequency.vulnerability.min,
                         likely: metrics.primary_loss_event_frequency.vulnerability.likely,
-                        max: metrics.primary_loss_event_frequency.vulnerability.max
+                        max: metrics.primary_loss_event_frequency.vulnerability.max,
+                        confidence: mapConfidenceToString(metrics.primary_loss_event_frequency.vulnerability.confidence)
                     },
-                    plm: plmTotal,
+                    primary_loss_magnitude: {
+                        productivity: { ...metrics.primary_loss_magnitude.productivity, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.productivity.confidence) },
+                        response: { ...metrics.primary_loss_magnitude.response, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.response.confidence) },
+                        replacement: { ...metrics.primary_loss_magnitude.replacement, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.replacement.confidence) },
+                        competitive_advantage: { ...metrics.primary_loss_magnitude.competitive_advantage, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.competitive_advantage.confidence) },
+                        fines_and_judgements: { ...metrics.primary_loss_magnitude.fines_and_judgements, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.fines_and_judgements.confidence) },
+                        reputation: { ...metrics.primary_loss_magnitude.reputation, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.reputation.confidence) }
+                    },
                     slef: {
                         min: metrics.secondary_loss_event_frequency.SLEF.min,
                         likely: metrics.secondary_loss_event_frequency.SLEF.likely,
-                        max: metrics.secondary_loss_event_frequency.SLEF.max
+                        max: metrics.secondary_loss_event_frequency.SLEF.max,
+                        confidence: mapConfidenceToString(metrics.secondary_loss_event_frequency.SLEF.confidence)
                     },
-                    slm: slmTotal
+                    secondary_loss_magnitude: {
+                        productivity: { ...metrics.secondary_loss_magnitude.productivity, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.productivity.confidence) },
+                        response: { ...metrics.secondary_loss_magnitude.response, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.response.confidence) },
+                        replacement: { ...metrics.secondary_loss_magnitude.replacement, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.replacement.confidence) },
+                        competitive_advantage: { ...metrics.secondary_loss_magnitude.competitive_advantage, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.competitive_advantage.confidence) },
+                        fines_and_judgements: { ...metrics.secondary_loss_magnitude.fines_and_judgements, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.fines_and_judgements.confidence) },
+                        reputation: { ...metrics.secondary_loss_magnitude.reputation, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.reputation.confidence) }
+                    }
                 };
 
                 console.log('Sending simulation data:', simulationData);
