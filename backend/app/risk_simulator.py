@@ -16,13 +16,30 @@ class Calculator:
         self.slm = (slm_min, slm_likely, slm_max)
         
     def pert(self, low, likely, high, confidence=4.0):
+        # Handle edge cases
+        if high <= low or abs(high - low) < 1e-10:
+            return likely
+            
         mean = (low + confidence * likely + high) / (confidence + 2)
-        if high == low:
-            return mean
         variance = ((high - low) ** 2) / 36
-        alpha = ((mean - low) * (2 * likely - low - high)) / ((high - low) * (likely - mean))
-        beta = alpha * (high - mean) / (mean - low)
-        return np.random.beta(alpha, beta) * (high - low) + low
+        
+        # Handle edge cases to prevent division by zero
+        if abs(likely - mean) < 1e-10:
+            likely += 1e-10
+        
+        try:
+            alpha = ((mean - low) * (2 * likely - low - high)) / ((high - low) * (likely - mean))
+            if alpha <= 0:  # Invalid alpha value
+                return likely
+                
+            beta = alpha * (high - mean) / (mean - low)
+            if beta <= 0:  # Invalid beta value
+                return likely
+                
+            return np.random.beta(alpha, beta) * (high - low) + low
+        except:
+            # If any calculation fails, return the likely value
+            return likely
     
     def run_simulation(self, iterations=1000000):
         results = []

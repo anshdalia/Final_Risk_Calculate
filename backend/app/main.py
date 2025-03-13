@@ -91,6 +91,34 @@ class SimulationRequest(BaseModel):
     slef: RiskValues
     slm: RiskValues
 
+class LossMagnitudeCategory(BaseModel):
+    min: float
+    likely: float
+    max: float
+    confidence: str = "medium"
+
+class LossMagnitude(BaseModel):
+    productivity: LossMagnitudeCategory
+    response: LossMagnitudeCategory
+    replacement: LossMagnitudeCategory
+    competitive_advantage: LossMagnitudeCategory
+    fines_and_judgements: LossMagnitudeCategory
+    reputation: LossMagnitudeCategory
+
+class RangeValue(BaseModel):
+    min: float
+    likely: float
+    max: float
+    confidence: str = "medium"
+
+class SimulationInput(BaseModel):
+    tef: RangeValue
+    vul: RangeValue
+    primary_loss_magnitude: LossMagnitude
+    slef: RangeValue
+    secondary_loss_magnitude: LossMagnitude
+    dlef: Optional[RangeValue] = None
+
 @app.post("/api/initial-input")
 async def process_initial_input(input_data: InitialInput):
     """Step 1: Process initial input and generate scenarios"""
@@ -229,32 +257,124 @@ async def test_remediation():
         logger.error(f"Error in test endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+def format_simulation_input(request: SimulationInput) -> Dict:
+    """Format the input data to match Calculator's expected structure"""
+    def format_loss_categories(loss_magnitude: LossMagnitude) -> Dict:
+        return {
+            category: {
+                'Min': getattr(loss_magnitude, category).min,
+                'Likely': getattr(loss_magnitude, category).likely,
+                'Max': getattr(loss_magnitude, category).max,
+                'Confidence': getattr(loss_magnitude, category).confidence
+            }
+            for category in ['productivity', 'response', 'replacement', 
+                           'competitive_advantage', 'fines_and_judgements', 'reputation']
+        }
+
+    return {
+        'tef': {
+            'min': request.tef.min,
+            'likely': request.tef.likely,
+            'max': request.tef.max,
+            'confidence': request.tef.confidence
+        },
+        'vul': {
+            'min': request.vul.min,
+            'likely': request.vul.likely,
+            'max': request.vul.max,
+            'confidence': request.vul.confidence
+        },
+        'pl': {
+            'categories': format_loss_categories(request.primary_loss_magnitude)
+        },
+        'slef': {
+            'min': request.slef.min,
+            'likely': request.slef.likely,
+            'max': request.slef.max,
+            'confidence': request.slef.confidence
+        },
+        'sl': {
+            'categories': format_loss_categories(request.secondary_loss_magnitude)
+        },
+        'dlef': {
+            'min': request.dlef.min if request.dlef else None,
+            'likely': request.dlef.likely if request.dlef else None,
+            'max': request.dlef.max if request.dlef else None,
+            'confidence': request.dlef.confidence if request.dlef else "medium"
+        }
+    }
+
+def format_simulation_output(calculations: Dict) -> Dict:
+    """Format the simulation results for the frontend"""
+    return {
+        'loss_statistics': calculations['loss_statistics'],
+        'ordered_total_expected_annual_losses': calculations['ordered_total_expected_annual_losses'].tolist(),
+        'possible_total_loss': calculations['possible_total_loss'].tolist(),
+        'simulated_lef': calculations['simulated_lef'].tolist(),
+        'percentiles': {
+            'p10': calculations['loss_statistics']['single_loss']['10'],
+            'p50': calculations['loss_statistics']['single_loss']['50'],
+            'p90': calculations['loss_statistics']['single_loss']['90']
+        }
+    }
+
 @app.post("/api/simulate_risk")
-async def simulate_risk(request: SimulationRequest):
+async def simulate_risk(request: SimulationInput):
     try:
+        logger.info("Starting Monte Carlo simulation")
         logger.info(f"Received simulation request: {request}")
         
+        # Calculate total loss magnitudes by summing all categories
+        def sum_loss_categories(loss_magnitude: LossMagnitude) -> Dict[str, float]:
+            categories = ['productivity', 'response', 'replacement', 
+                        'competitive_advantage', 'fines_and_judgements', 'reputation']
+            total = {
+                'min': 0,
+                'likely': 0,
+                'max': 0
+            }
+            for category in categories:
+                cat_values = getattr(loss_magnitude, category)
+                total['min'] += cat_values.min
+                total['likely'] += cat_values.likely
+                total['max'] += cat_values.max
+            return total
+
+        # Sum up primary and secondary loss magnitudes
+        plm_total = sum_loss_categories(request.primary_loss_magnitude)
+        slm_total = sum_loss_categories(request.secondary_loss_magnitude)
+
+        # Initialize calculator with flattened values
         calculator = Calculator(
             tef_min=request.tef.min,
             tef_likely=request.tef.likely,
             tef_max=request.tef.max,
-            vuln_min=request.vulnerability.min,
-            vuln_likely=request.vulnerability.likely,
-            vuln_max=request.vulnerability.max,
-            plm_min=request.plm.min,
-            plm_likely=request.plm.likely,
-            plm_max=request.plm.max,
+            vuln_min=request.vul.min,
+            vuln_likely=request.vul.likely,
+            vuln_max=request.vul.max,
+            plm_min=plm_total['min'],
+            plm_likely=plm_total['likely'],
+            plm_max=plm_total['max'],
             slef_min=request.slef.min,
             slef_likely=request.slef.likely,
             slef_max=request.slef.max,
-            slm_min=request.slm.min,
-            slm_likely=request.slm.likely,
-            slm_max=request.slm.max
+            slm_min=slm_total['min'],
+            slm_likely=slm_total['likely'],
+            slm_max=slm_total['max']
         )
         
+        # Run simulation
         results = calculator.run_simulation()
+        
+        # Generate output
         output_generator = OutputGenerator(results)
-        return output_generator.generate_histogram()
+        output = output_generator.generate_histogram()
+        
+        logger.info("Simulation completed successfully")
+        logger.info(f"Results: {output}")
+        
+        return output
+        
     except Exception as e:
         logger.error(f"Error in simulation: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
