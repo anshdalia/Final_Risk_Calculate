@@ -124,6 +124,19 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
                                 Risk Scenarios Assessment
                             </Typography>
                         </Box>
+                        <Alert 
+                            severity="warning" 
+                            icon={false}
+                            sx={{ 
+                                mb: 2,
+                                backgroundColor: '#f5f5f5',  // Light gray background
+                                color: '#424242',  // Dark gray text
+                                border: '1px solid #e0e0e0', // Light gray border
+                                '& .MuiAlert-message': { p: 0 }
+                            }}
+                        >
+                            We are analyzing the highest risk scenario to provide a comprehensive risk assessment. This scenario represents the most severe potential impact on your organization.
+                        </Alert>
                         {riskState?.scenarios && (
                             <Box sx={{ flexGrow: 1 }}>
                                 <ScenariosDisplay 
