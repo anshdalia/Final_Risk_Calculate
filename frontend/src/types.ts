@@ -39,34 +39,6 @@ export interface Scenario {
     potential_impact: string;
 }
 
-interface HistoricalIncident {
-    date: string;
-    industry: string;
-    event_type: string;
-    description: string;
-    financial_impact: number | null;
-    affected_count: number | null;
-    similarity_score: number;
-}
-
-interface HistoricalAnalysisSummary {
-    total_matches: number;
-    avg_financial_impact: number;
-    most_common_type: string;
-}
-
-interface RiskAdjustments {
-    frequency_factor: number;
-    magnitude_factor: number;
-    confidence: number;
-}
-
-interface HistoricalAnalysis {
-    similar_incidents: HistoricalIncident[];
-    risk_adjustments: RiskAdjustments;
-    summary: HistoricalAnalysisSummary;
-}
-
 export interface RiskState {
     risk_metrics: RiskMetrics;
     user_inputs: {
@@ -80,24 +52,29 @@ export interface RiskState {
     selected_scenario: Scenario;
     dynamic_questions: string[];
     question_answers: { [key: string]: string };
-    historical_analysis?: {
-        similar_incidents: any[];
-        risk_adjustments: {
-            frequency_factor: number;
-            magnitude_factor: number;
-            confidence: number;
+    industry_analysis: {
+        insights?: {
+            breach_cost?: {
+                amount: number;
+                year: number;
+                source: string;
+            };
+            attack_vectors?: Array<{
+                type: string;
+                percentage: number;
+                source: string;
+            }>;
+            response_times?: {
+                time_to_identify: number;
+                time_to_contain: number;
+                source: string;
+            };
         };
-        summary: {
-            total_matches: number;
-            most_common_type: string;
-            avg_financial_impact: number;
-        };
-        risk_metrics?: {
-            primary_loss_event_frequency: PrimaryLossEventFrequency;
-            secondary_loss_event_frequency: SecondaryLossEventFrequency;
-            primary_loss_magnitude: LossMagnitude;
-            secondary_loss_magnitude: LossMagnitude;
-        };
+        regional_cyber_crimes?: Array<{
+            crime_type: string;
+            statistics: string;
+            year: number;
+        }>;
     };
     remediation_suggestions: string[];
 }

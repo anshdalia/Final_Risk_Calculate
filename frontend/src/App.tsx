@@ -17,7 +17,6 @@ import { InitialInputForm } from './components/InitialInputForm';
 import { DynamicQuestionsForm } from './components/DynamicQuestionsForm';
 import { IndustryAnalysisForm } from './components/IndustryAnalysisForm';
 import { RiskMetricsDisplay } from './components/RiskMetricsDisplay';
-import { HistoricalAnalysisForm } from './components/HistoricalAnalysisForm';
 import { Summary } from './components/Summary';
 import { api } from './api';
 import { RiskState } from './types';
@@ -26,11 +25,10 @@ const steps = [
     'Initial Input',
     'Dynamic Questions',
     'Industry Analysis',
-    'Historical Analysis',
     'Summary'
 ];
 
-const maxSteps = 5;  // Update max steps to include all 5 steps
+const maxSteps = 4;  // Updated to 4 steps
 
 function App() {
     const [riskState, setRiskState] = useState<RiskState | null>(null);
@@ -110,28 +108,8 @@ function App() {
         }
     };
 
-    const handleHistoricalAnalysis = async () => {
-        try {
-            setLoading(true);
-            const result = await api.processHistoricalAnalysis();
-            setRiskState(result);
-            setCompletedSteps([...completedSteps, 3]);
-        } catch (error) {
-            console.error('Error:', error);
-            setToast({
-                open: true,
-                message: 'Error processing historical analysis',
-                severity: 'error'
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleNext = () => {
-        if (activeStep < maxSteps - 1) {
-            setActiveStep(activeStep + 1);
-        }
+    const handleContinueToSummary = () => {
+        setActiveStep(3);
     };
 
     return (
@@ -190,7 +168,7 @@ function App() {
                             onAnalyze={handleIndustryAnalysis}
                             disabled={completedSteps.includes(2)}
                             loading={loading}
-                            onContinue={() => setActiveStep(3)}
+                            onContinue={handleContinueToSummary}
                         />
                         <Paper sx={{ p: 3 }}>
                             <RiskMetricsDisplay 
@@ -204,26 +182,6 @@ function App() {
                 )}
 
                 {activeStep === 3 && riskState && (
-                    <Stack spacing={3}>
-                        <HistoricalAnalysisForm
-                            riskState={riskState}
-                            onAnalyze={handleHistoricalAnalysis}
-                            disabled={completedSteps.includes(3)}
-                            loading={loading}
-                            onNext={handleNext}
-                        />
-                        <Paper sx={{ p: 3 }}>
-                            <RiskMetricsDisplay 
-                                metrics={riskState.risk_metrics} 
-                                scenarios={riskState.scenarios}
-                                selectedScenario={riskState.selected_scenario}
-                                showScenarios={false}
-                            />
-                        </Paper>
-                    </Stack>
-                )}
-
-                {activeStep === 4 && riskState && (
                     <Summary riskState={riskState} />
                 )}
             </Stack>

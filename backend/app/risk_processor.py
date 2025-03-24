@@ -1,7 +1,6 @@
 import json
 from typing import List, Dict, Any
 from app.risk_state import RiskState
-from app.historical_analyzer import HistoricalAnalyzer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,7 +9,6 @@ class RiskProcessor:
     def __init__(self, umd_db_path: str, gpt4_mini_client: Any):
         """Initialize the risk processor with necessary components"""
         self.state = RiskState()
-        self.historical_analyzer = HistoricalAnalyzer(umd_db_path)
         self.gpt4_mini = gpt4_mini_client
     
     def process_initial_input(self, revenue: float, employees: int, 
@@ -270,225 +268,291 @@ class RiskProcessor:
         
         return self.state.get_current_state()
     
-    def process_industry_reports(self) -> Dict:
-        """Step 3: Compare against industry standards and adjust metrics"""
-        # Get current state after security measures
-        current_state = self.state.get_current_state()
-        
-        # Generate prompt for GPT-4-mini
-        prompt = f"""As a cybersecurity risk analyst, analyze this company's risk profile against industry standards:
-
-Company Profile:
-Industry: {self.state.user_inputs['industry']}
-Location: {self.state.user_inputs['location']}
-Size: {self.state.user_inputs['employees']} employees
-Revenue: ${self.state.user_inputs['revenue']:,.2f}
-
-Current Risk Metrics (after security measures assessment):
-{json.dumps(current_state['risk_metrics'], indent=2)}
-
-Compare these metrics against:
-1. FBI Internet Crime Report (IC3) {self.state.user_inputs['industry']} statistics
-2. Verizon Data Breach Investigations Report (DBIR) findings for {self.state.user_inputs['industry']}
-3. IBM Cost of a Data Breach Report metrics for {self.state.user_inputs['industry']}
-
-Consider and adjust values based on:
-- Average breach costs for this industry and company size (adjust breach_cost.amount accordingly)
-- Typical attack patterns and frequencies (adjust attack_vectors percentages based on DBIR data)
-- Industry-specific vulnerability statistics (adjust risk_metrics based on industry averages)
-- Regional factors for {self.state.user_inputs['location']} (include in regional_cyber_crimes)
-- Company size impact on likelihood and magnitude (scale metrics appropriately)
-- Top cyber crimes and their impact in {self.state.user_inputs['location']} (reflect in regional_cyber_crimes)
-
-Important: Ensure all numerical values in the response reflect actual industry statistics and regional data.
-If a specific industry or region shows higher/lower metrics, adjust the values accordingly.
-
-Provide detailed analysis including:
-1. Industry-specific insights with current statistics (use real industry averages)
-2. Regional cyber crime trends and statistics (based on actual regional data)
-3. Risk metric adjustments based on industry standards (scale according to industry benchmarks)
-
-Format response as JSON with:
-{{
-    "risk_metrics": {{
-        "primary_loss_event_frequency": {{
-            "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "vulnerability": {{ "min": float, "likely": float, "max": float, "confidence": float }}
-        }},
-        "secondary_loss_event_frequency": {{
-            "SLEF": {{ "min": float, "likely": float, "max": float, "confidence": float }}
-        }},
-        "primary_loss_magnitude": {{
-            "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
-        }},
-        "secondary_loss_magnitude": {{
-            "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
-            "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
-        }}
-    }},
-    "industry_insights": {{
-        "breach_cost": {{
-            "amount": float,
-            "year": int,
-            "source": str
-        }},
-        "attack_vectors": [
-            {{
-                "type": str,
-                "percentage": float,
-                "source": str
-            }}
-        ],
-        "response_times": {{
-            "time_to_identify": int,
-            "time_to_contain": int,
-            "source": str
-        }}
-    }},
-    "regional_cyber_crimes": [
-        {{
-            "crime_type": str,
-            "statistics": str,
-            "year": int
-        }}
-    ]
-}}"""
-
+    def process_industry_analysis(self) -> Dict:
+        """Process industry analysis and adjust risk metrics based on industry reports."""
         try:
-            # Get GPT-4-mini analysis
-            response = self.gpt4_mini.generate(prompt)
+            # Get current metrics
+            current_metrics = self.state.risk_metrics
+            
+            # Get industry-specific insights from GPT
+            industry_prompt = f"""
+            Analyze the following organization's risk profile and provide industry-specific insights:
+            Industry: {self.state.user_inputs['industry']}
+            Location: {self.state.user_inputs['location']}
+            Employee Count: {self.state.user_inputs['employees']}
+            
+            Current Risk Metrics:
+            {json.dumps(current_metrics, indent=2)}
+            
+            Please provide:
+            1. Industry-specific breach costs and sources
+            2. Primary attack vectors and their distribution
+            3. Mean time to identify and contain breaches
+            4. Regional cyber crime patterns
+            
+            Use data from:
+            - IBM Cost of a Data Breach Report (DBIR)
+            - FBI Internet Crime Reports
+            - Industry-specific cybersecurity reports
+            
+            Format response as JSON with:
+            {{
+                "insights": {{
+                    "breach_cost": {{
+                        "amount": float,
+                        "year": int,
+                        "source": "string"
+                    }},
+                    "attack_vectors": [
+                        {{ "type": "string", "percentage": float, "source": "string" }}
+                    ],
+                    "response_times": {{
+                        "time_to_identify": int,
+                        "time_to_contain": int,
+                        "source": "string"
+                    }}
+                }},
+                "regional_cyber_crimes": [
+                    {{ "crime_type": "string", "statistics": "string", "year": int }}
+                ],
+                "adjustments": {{
+                    "primary_loss_event_frequency": {{
+                        "threat_event_frequency": {{ "min": float, "likely": float, "max": float }},
+                        "vulnerability": {{ "min": float, "likely": float, "max": float }}
+                    }},
+                    "secondary_loss_event_frequency": {{
+                        "SLEF": {{ "min": float, "likely": float, "max": float }}
+                    }},
+                    "primary_loss_magnitude": {{
+                        "productivity": {{ "min": float, "likely": float, "max": float }},
+                        "response": {{ "min": float, "likely": float, "max": float }},
+                        "replacement": {{ "min": float, "likely": float, "max": float }},
+                        "competitive_advantage": {{ "min": float, "likely": float, "max": float }},
+                        "fines_and_judgements": {{ "min": float, "likely": float, "max": float }},
+                        "reputation": {{ "min": float, "likely": float, "max": float }}
+                    }},
+                    "secondary_loss_magnitude": {{
+                        "productivity": {{ "min": float, "likely": float, "max": float }},
+                        "response": {{ "min": float, "likely": float, "max": float }},
+                        "replacement": {{ "min": float, "likely": float, "max": float }},
+                        "competitive_advantage": {{ "min": float, "likely": float, "max": float }},
+                        "fines_and_judgements": {{ "min": float, "likely": float, "max": float }},
+                        "reputation": {{ "min": float, "likely": float, "max": float }}
+                    }}
+                }}
+            }}
+            """
+            
+            # Get GPT analysis
+            response = self.gpt4_mini.generate(industry_prompt)
             analysis = json.loads(response)
             
-            # Log the changes
-            logger.info("\n=== Industry Analysis Phase Changes ===")
-            current_metrics = current_state['risk_metrics']
-            new_metrics = analysis['risk_metrics']
-            
-            # Calculate and log percentage changes for key metrics
-            def calculate_percentage_change(old_val, new_val):
-                return ((new_val - old_val) / old_val) * 100 if old_val != 0 else 0
-
-            # Log PLEF changes
-            logger.info("\nPrimary Loss Event Frequency Changes:")
-            for metric_type in ['threat_event_frequency', 'vulnerability']:
-                old_val = current_metrics['primary_loss_event_frequency'][metric_type]['likely']
-                new_val = new_metrics['primary_loss_event_frequency'][metric_type]['likely']
-                pct_change = calculate_percentage_change(old_val, new_val)
-                logger.info(f"{metric_type}: {old_val:.3f} -> {new_val:.3f} ({pct_change:+.1f}% change)")
-
-            # Log SLEF changes
-            logger.info("\nSecondary Loss Event Frequency Changes:")
-            old_val = current_metrics['secondary_loss_event_frequency']['SLEF']['likely']
-            new_val = new_metrics['secondary_loss_event_frequency']['SLEF']['likely']
-            pct_change = calculate_percentage_change(old_val, new_val)
-            logger.info(f"SLEF: {old_val:.3f} -> {new_val:.3f} ({pct_change:+.1f}% change)")
-
-            # Log Loss Magnitude changes
-            for magnitude_type in ['primary_loss_magnitude', 'secondary_loss_magnitude']:
-                logger.info(f"\n{magnitude_type.replace('_', ' ').title()} Changes:")
-                for category in ['productivity', 'response', 'replacement', 'competitive_advantage', 'fines_and_judgements', 'reputation']:
-                    old_val = current_metrics[magnitude_type][category]['likely']
-                    new_val = new_metrics[magnitude_type][category]['likely']
-                    pct_change = calculate_percentage_change(old_val, new_val)
-                    logger.info(f"{category}: ${old_val:,.2f} -> ${new_val:,.2f} ({pct_change:+.1f}% change)")
-
-            # Log industry insights and regional cyber crimes
-            logger.info("\nIndustry Insights:")
-            logger.info(f"Breach Cost: ${analysis['industry_insights']['breach_cost']['amount']:,.2f} ({analysis['industry_insights']['breach_cost']['year']})")
-            logger.info("\nAttack Vectors:")
-            for vector in analysis['industry_insights']['attack_vectors']:
-                logger.info(f"- {vector['type']}: {vector['percentage']}%")
-            logger.info(f"\nResponse Times:")
-            logger.info(f"Time to Identify: {analysis['industry_insights']['response_times']['time_to_identify']} days")
-            logger.info(f"Time to Contain: {analysis['industry_insights']['response_times']['time_to_contain']} days")
-
-            logger.info("\nRegional Cyber Crimes:")
-            for crime in analysis['regional_cyber_crimes']:
-                logger.info(f"- {crime['crime_type']}: {crime['statistics']} ({crime['year']})")
-
-            logger.info("\n=====================================")
-            
-            # Update state with new metrics and analysis
-            self.state.update_risk_metrics(**new_metrics)
-            self.state.update_industry_analysis({
-                'insights': analysis['industry_insights'],
+            # Extract insights and adjustments
+            insights = {
+                'insights': analysis['insights'],
                 'regional_cyber_crimes': analysis['regional_cyber_crimes']
-            })
+            }
+            
+            # Apply adjustments to all metrics
+            self._apply_metric_adjustments(current_metrics, analysis['adjustments'])
+            
+            # Update risk state with insights
+            self.state.industry_analysis = insights
+            
+            # Log the changes
+            logger.info("=== Industry Analysis Risk Metric Adjustments ===")
+            self._log_metric_changes(current_metrics, analysis['adjustments'])
+            logger.info("=====================================")
             
             return self.state.get_current_state()
             
         except Exception as e:
-            logger.error(f"Error processing industry standards: {str(e)}")
+            logger.error(f"Error in industry analysis: {str(e)}")
             raise
-    
-    def process_historical_data(self) -> Dict:
-        """Step 4: Analyze historical data and adjust risk metrics"""
-        logger.info("Processing historical analysis")
-        
-        # Get historical analysis
-        analysis = self.historical_analyzer.get_historical_analysis(
-            target_industry=self.state.user_inputs['industry'],
-            target_scenario=self.state.selected_scenario['description'],
-            company_size=self.state.user_inputs['employees']
-        )
-        
-        # Get current risk metrics
-        current_metrics = self.state.risk_metrics
-        
-        # Apply risk adjustments
-        adjustments = analysis['risk_adjustments']
-        new_metrics = {
-            "primary_loss_event_frequency": {
-                "threat_event_frequency": {
-                    "min": current_metrics["primary_loss_event_frequency"]["threat_event_frequency"]["min"] * adjustments['frequency_factor'],
-                    "likely": current_metrics["primary_loss_event_frequency"]["threat_event_frequency"]["likely"] * adjustments['frequency_factor'],
-                    "max": current_metrics["primary_loss_event_frequency"]["threat_event_frequency"]["max"] * adjustments['frequency_factor'],
-                    "confidence": adjustments['confidence']
+
+    def _parse_industry_insights(self, gpt_response: str) -> Dict:
+        """Parse GPT response to extract industry insights."""
+        try:
+            # Extract structured data from GPT response
+            insights = {
+                'insights': {
+                    'breach_cost': {
+                        'amount': 0,
+                        'year': 2024,
+                        'source': ''
+                    },
+                    'attack_vectors': [],
+                    'response_times': {
+                        'time_to_identify': 0,
+                        'time_to_contain': 0,
+                        'source': ''
+                    }
                 },
-                "vulnerability": current_metrics["primary_loss_event_frequency"]["vulnerability"]
-            },
-            "secondary_loss_event_frequency": {
-                "SLEF": {
-                    "min": current_metrics["secondary_loss_event_frequency"]["SLEF"]["min"] * adjustments['frequency_factor'],
-                    "likely": current_metrics["secondary_loss_event_frequency"]["SLEF"]["likely"] * adjustments['frequency_factor'],
-                    "max": current_metrics["secondary_loss_event_frequency"]["SLEF"]["max"] * adjustments['frequency_factor'],
-                    "confidence": adjustments['confidence']
-                }
+                'regional_cyber_crimes': []
             }
-        }
-        
-        # Adjust loss magnitudes based on historical data
-        for magnitude_type in ["primary_loss_magnitude", "secondary_loss_magnitude"]:
-            new_metrics[magnitude_type] = {}
-            for category in current_metrics[magnitude_type]:
-                new_metrics[magnitude_type][category] = {
-                    "min": current_metrics[magnitude_type][category]["min"] * adjustments['magnitude_factor'],
-                    "likely": current_metrics[magnitude_type][category]["likely"] * adjustments['magnitude_factor'],
-                    "max": current_metrics[magnitude_type][category]["max"] * adjustments['magnitude_factor'],
-                    "confidence": adjustments['confidence']
+            
+            # Parse GPT response to populate insights
+            # This is a simplified example - you'll need to implement proper parsing
+            # based on your GPT response format
+            
+            return insights
+            
+        except Exception as e:
+            logger.error(f"Error parsing industry insights: {str(e)}")
+            raise
+
+    def _adjust_risk_metrics(self, insights: Dict):
+        """Adjust all risk metrics based on industry insights."""
+        try:
+            # Get current metrics
+            current_metrics = self.state.risk_metrics
+            
+            # Generate prompt for GPT to analyze and adjust all metrics
+            metrics_prompt = f"""
+            Based on the following industry insights, analyze and adjust ALL risk metrics:
+            
+            Industry Insights:
+            - Breach Cost: ${insights['insights']['breach_cost']['amount']} ({insights['insights']['breach_cost']['year']})
+            - Attack Vectors: {', '.join([f"{v['type']} ({v['percentage']}%)" for v in insights['insights']['attack_vectors']])}
+            - Response Times: {insights['insights']['response_times']['time_to_identify']} days to identify, {insights['insights']['response_times']['time_to_contain']} days to contain
+            - Regional Crimes: {', '.join([f"{c['crime_type']} ({c['statistics']})" for c in insights['regional_cyber_crimes']])}
+            
+            Current Risk Metrics:
+            {json.dumps(current_metrics, indent=2)}
+            
+            Please analyze how these industry insights affect ALL risk metrics and provide adjustment factors.
+            Consider:
+            1. How attack vectors affect threat event frequency and vulnerability
+            2. How breach costs impact all loss magnitude components
+            3. How response times affect productivity and response costs
+            4. How regional crime patterns influence overall risk exposure
+            
+            Format response as JSON with adjustment factors for each metric:
+            {{
+                "primary_loss_event_frequency": {{
+                    "threat_event_frequency": {{ "min": float, "likely": float, "max": float }},
+                    "vulnerability": {{ "min": float, "likely": float, "max": float }}
+                }},
+                "secondary_loss_event_frequency": {{
+                    "SLEF": {{ "min": float, "likely": float, "max": float }}
+                }},
+                "primary_loss_magnitude": {{
+                    "productivity": {{ "min": float, "likely": float, "max": float }},
+                    "response": {{ "min": float, "likely": float, "max": float }},
+                    "replacement": {{ "min": float, "likely": float, "max": float }},
+                    "competitive_advantage": {{ "min": float, "likely": float, "max": float }},
+                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float }},
+                    "reputation": {{ "min": float, "likely": float, "max": float }}
+                }},
+                "secondary_loss_magnitude": {{
+                    "productivity": {{ "min": float, "likely": float, "max": float }},
+                    "response": {{ "min": float, "likely": float, "max": float }},
+                    "replacement": {{ "min": float, "likely": float, "max": float }},
+                    "competitive_advantage": {{ "min": float, "likely": float, "max": float }},
+                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float }},
+                    "reputation": {{ "min": float, "likely": float, "max": float }}
+                }}
+            }}
+            """
+            
+            # Get GPT analysis of adjustments
+            response = self.gpt4_mini.generate(metrics_prompt)
+            adjustments = json.loads(response)
+            
+            # Apply adjustments to all metrics
+            self._apply_metric_adjustments(current_metrics, adjustments)
+            
+            # Log the changes
+            logger.info("=== Industry Analysis Risk Metric Adjustments ===")
+            self._log_metric_changes(current_metrics, adjustments)
+            logger.info("=====================================")
+            
+        except Exception as e:
+            logger.error(f"Error adjusting risk metrics: {str(e)}")
+            raise
+
+    def _apply_metric_adjustments(self, current_metrics: Dict, adjustments: Dict):
+        """Apply adjustment factors to all risk metrics."""
+        try:
+            # Helper function to apply adjustments to a metric
+            def apply_adjustment(metric: Dict, adjustment: Dict) -> Dict:
+                return {
+                    "min": metric["min"] * adjustment["min"],
+                    "likely": metric["likely"] * adjustment["likely"],
+                    "max": metric["max"] * adjustment["max"],
+                    "confidence": metric["confidence"]
                 }
-        
-        # Log the changes
-        logger.info("\n=== Historical Analysis Phase Changes ===")
-        logger.info(f"Found {len(analysis['similar_incidents'])} similar incidents")
-        logger.info(f"Average financial impact: ${analysis['summary']['avg_financial_impact']:,.2f}")
-        logger.info(f"Most common event type: {analysis['summary']['most_common_type']}")
-        logger.info(f"\nRisk Adjustments:")
-        logger.info(f"Frequency factor: {adjustments['frequency_factor']:.2f}")
-        logger.info(f"Magnitude factor: {adjustments['magnitude_factor']:.2f}")
-        logger.info(f"Confidence: {adjustments['confidence']:.2f}")
-        
-        # Update state
-        self.state.update_risk_metrics(**new_metrics)
-        self.state.update_historical_analysis(analysis)
-        
-        return self.state.get_current_state() 
+            
+            # Apply adjustments to primary loss event frequency
+            for metric_type in ['threat_event_frequency', 'vulnerability']:
+                current_metrics['primary_loss_event_frequency'][metric_type] = apply_adjustment(
+                    current_metrics['primary_loss_event_frequency'][metric_type],
+                    adjustments['primary_loss_event_frequency'][metric_type]
+                )
+            
+            # Apply adjustments to secondary loss event frequency
+            current_metrics['secondary_loss_event_frequency']['SLEF'] = apply_adjustment(
+                current_metrics['secondary_loss_event_frequency']['SLEF'],
+                adjustments['secondary_loss_event_frequency']['SLEF']
+            )
+            
+            # Apply adjustments to primary loss magnitude
+            for category in ['productivity', 'response', 'replacement', 'competitive_advantage', 
+                           'fines_and_judgements', 'reputation']:
+                current_metrics['primary_loss_magnitude'][category] = apply_adjustment(
+                    current_metrics['primary_loss_magnitude'][category],
+                    adjustments['primary_loss_magnitude'][category]
+                )
+            
+            # Apply adjustments to secondary loss magnitude
+            for category in ['productivity', 'response', 'replacement', 'competitive_advantage', 
+                           'fines_and_judgements', 'reputation']:
+                current_metrics['secondary_loss_magnitude'][category] = apply_adjustment(
+                    current_metrics['secondary_loss_magnitude'][category],
+                    adjustments['secondary_loss_magnitude'][category]
+                )
+            
+        except Exception as e:
+            logger.error(f"Error applying metric adjustments: {str(e)}")
+            raise
+
+    def _log_metric_changes(self, current_metrics: Dict, adjustments: Dict):
+        """Log all metric changes for transparency."""
+        try:
+            # Log PLEF changes
+            logger.info("\nPrimary Loss Event Frequency Changes:")
+            for metric_type in ['threat_event_frequency', 'vulnerability']:
+                for value_type in ['min', 'likely', 'max']:
+                    old_val = current_metrics['primary_loss_event_frequency'][metric_type][value_type]
+                    adjustment = adjustments['primary_loss_event_frequency'][metric_type][value_type]
+                    new_val = old_val * adjustment
+                    change = new_val - old_val
+                    direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
+                    logger.info(f"{metric_type} {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
+            
+            # Log SLEF changes
+            logger.info("\nSecondary Loss Event Frequency Changes:")
+            for value_type in ['min', 'likely', 'max']:
+                old_val = current_metrics['secondary_loss_event_frequency']['SLEF'][value_type]
+                adjustment = adjustments['secondary_loss_event_frequency']['SLEF'][value_type]
+                new_val = old_val * adjustment
+                change = new_val - old_val
+                direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
+                logger.info(f"SLEF {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
+            
+            # Log Loss Magnitude changes
+            for magnitude_type in ['primary_loss_magnitude', 'secondary_loss_magnitude']:
+                logger.info(f"\n{magnitude_type.replace('_', ' ').title()} Changes:")
+                for category in ['productivity', 'response', 'replacement', 'competitive_advantage', 
+                               'fines_and_judgements', 'reputation']:
+                    for value_type in ['min', 'likely', 'max']:
+                        old_val = current_metrics[magnitude_type][category][value_type]
+                        adjustment = adjustments[magnitude_type][category][value_type]
+                        new_val = old_val * adjustment
+                        change = new_val - old_val
+                        direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
+                        logger.info(f"{category} {value_type}: ${old_val:,.2f} -> ${new_val:,.2f} ({direction} by ${abs(change):,.2f})")
+            
+        except Exception as e:
+            logger.error(f"Error logging metric changes: {str(e)}")
+            raise 

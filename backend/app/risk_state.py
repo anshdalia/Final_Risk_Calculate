@@ -62,7 +62,6 @@ class RiskState:
         
         # Analysis results
         self.industry_analysis = {}
-        self.historical_analysis = {}
         self.remediation_suggestions = []
     
     def update_risk_metrics(self, primary_loss_event_frequency: Dict = None,
@@ -133,12 +132,6 @@ class RiskState:
         self.industry_analysis = analysis_data
         logger.debug(f"Industry analysis updated: {analysis_data}")
     
-    def update_historical_analysis(self, analysis_data: Dict):
-        """Update historical analysis results"""
-        logger.info("Updating historical analysis")
-        self.historical_analysis = analysis_data
-        logger.debug(f"Historical analysis updated: {analysis_data}")
-    
     def set_remediation_suggestions(self, suggestions: List[str]):
         """Set remediation suggestions"""
         logger.info("Setting remediation suggestions")
@@ -155,6 +148,5 @@ class RiskState:
             "dynamic_questions": self.dynamic_questions,
             "question_answers": self.question_answers,
             "industry_analysis": self.industry_analysis,
-            "historical_analysis": self.historical_analysis,
             "remediation_suggestions": self.remediation_suggestions
         } 

@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from app.risk_processor import RiskProcessor
 from app.gpt4_mini_client import GPT4MiniClient
 import openai
-from .historical_analyzer import HistoricalAnalyzer
 from .risk_simulator import Calculator, OutputGenerator
 
 # Load environment variables
@@ -154,37 +153,11 @@ async def process_industry_analysis():
     """Step 3: Process industry analysis"""
     logger.info("Processing industry analysis")
     try:
-        result = risk_processor.process_industry_reports()
+        result = risk_processor.process_industry_analysis()
         logger.info("Industry analysis processed successfully")
         return result
     except Exception as e:
         logger.error(f"Error processing industry analysis: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/historical-analysis")
-async def process_historical_analysis():
-    """Step 4: Process historical analysis"""
-    logger.info("Processing historical analysis")
-    try:
-        result = risk_processor.process_historical_data()
-        logger.info("Historical analysis processed successfully")
-        
-        # Convert result to JSON-safe values
-        def clean_nan_values(data):
-            if isinstance(data, dict):
-                return {k: clean_nan_values(v) for k, v in data.items()}
-            elif isinstance(data, list):
-                return [clean_nan_values(x) for x in data]
-            elif isinstance(data, float) and (math.isnan(data) or math.isinf(data)):
-                return 0.0
-            return data
-        
-        cleaned_result = clean_nan_values(result)
-        logger.info(f"Cleaned result: {cleaned_result}")
-        return cleaned_result
-        
-    except Exception as e:
-        logger.error(f"Error processing historical analysis: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/current-state")

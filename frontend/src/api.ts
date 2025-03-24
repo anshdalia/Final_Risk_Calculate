@@ -19,11 +19,6 @@ export const api = {
         return response.data;
     },
 
-    processHistoricalAnalysis: async (): Promise<RiskState> => {
-        const response = await axios.post(`${API_BASE_URL}/historical-analysis`);
-        return response.data;
-    },
-
     getCurrentState: async (): Promise<RiskState> => {
         const response = await axios.get(`${API_BASE_URL}/current-state`);
         return response.data;
