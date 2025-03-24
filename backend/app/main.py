@@ -344,7 +344,6 @@ async def simulate_risk(request: SimulationInput):
         output = output_generator.generate_histogram()
         
         logger.info("Simulation completed successfully")
-        logger.info(f"Results: {output}")
         
         return output
         

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -39,10 +39,15 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' });
 
-    console.log('Questions prop in DynamicQuestionsForm:', questions);
-    console.log('RiskState in DynamicQuestionsForm:', riskState);
-    console.log('Risk State:', riskState);
-    console.log('Scenarios:', riskState?.scenarios);
+    // Log only when questions or riskState changes
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('DynamicQuestionsForm State:', {
+                questions,
+                riskState
+            });
+        }
+    }, [questions, riskState]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

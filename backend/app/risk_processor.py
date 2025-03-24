@@ -315,29 +315,29 @@ class RiskProcessor:
                 "regional_cyber_crimes": [
                     {{ "crime_type": "string", "statistics": "string", "year": int }}
                 ],
-                "adjustments": {{
+                "risk_metrics": {{
                     "primary_loss_event_frequency": {{
-                        "threat_event_frequency": {{ "min": float, "likely": float, "max": float }},
-                        "vulnerability": {{ "min": float, "likely": float, "max": float }}
+                        "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "vulnerability": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                     }},
                     "secondary_loss_event_frequency": {{
-                        "SLEF": {{ "min": float, "likely": float, "max": float }}
+                        "SLEF": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                     }},
                     "primary_loss_magnitude": {{
-                        "productivity": {{ "min": float, "likely": float, "max": float }},
-                        "response": {{ "min": float, "likely": float, "max": float }},
-                        "replacement": {{ "min": float, "likely": float, "max": float }},
-                        "competitive_advantage": {{ "min": float, "likely": float, "max": float }},
-                        "fines_and_judgements": {{ "min": float, "likely": float, "max": float }},
-                        "reputation": {{ "min": float, "likely": float, "max": float }}
+                        "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                     }},
                     "secondary_loss_magnitude": {{
-                        "productivity": {{ "min": float, "likely": float, "max": float }},
-                        "response": {{ "min": float, "likely": float, "max": float }},
-                        "replacement": {{ "min": float, "likely": float, "max": float }},
-                        "competitive_advantage": {{ "min": float, "likely": float, "max": float }},
-                        "fines_and_judgements": {{ "min": float, "likely": float, "max": float }},
-                        "reputation": {{ "min": float, "likely": float, "max": float }}
+                        "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                        "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                     }}
                 }}
             }}
@@ -347,21 +347,21 @@ class RiskProcessor:
             response = self.gpt4_mini.generate(industry_prompt)
             analysis = json.loads(response)
             
-            # Extract insights and adjustments
+            # Extract insights and new metrics
             insights = {
                 'insights': analysis['insights'],
                 'regional_cyber_crimes': analysis['regional_cyber_crimes']
             }
             
-            # Apply adjustments to all metrics
-            self._apply_metric_adjustments(current_metrics, analysis['adjustments'])
+            # Apply new metrics directly
+            self._apply_metric_adjustments(current_metrics, analysis['risk_metrics'])
             
             # Update risk state with insights
             self.state.industry_analysis = insights
             
             # Log the changes
-            logger.info("=== Industry Analysis Risk Metric Adjustments ===")
-            self._log_metric_changes(current_metrics, analysis['adjustments'])
+            logger.info("=== Industry Analysis Risk Metric Updates ===")
+            self._log_metric_changes(current_metrics, analysis['risk_metrics'])
             logger.info("=====================================")
             
             return self.state.get_current_state()
@@ -407,116 +407,97 @@ class RiskProcessor:
             # Get current metrics
             current_metrics = self.state.risk_metrics
             
-            # Generate prompt for GPT to analyze and adjust all metrics
+            # Generate prompt for GPT to analyze and set appropriate values
             metrics_prompt = f"""
-            Based on the following industry insights, analyze and adjust ALL risk metrics:
-            
+            Based on the following industry insights, analyze and provide appropriate risk metric values:
+
             Industry Insights:
             - Breach Cost: ${insights['insights']['breach_cost']['amount']} ({insights['insights']['breach_cost']['year']})
             - Attack Vectors: {', '.join([f"{v['type']} ({v['percentage']}%)" for v in insights['insights']['attack_vectors']])}
             - Response Times: {insights['insights']['response_times']['time_to_identify']} days to identify, {insights['insights']['response_times']['time_to_contain']} days to contain
             - Regional Crimes: {', '.join([f"{c['crime_type']} ({c['statistics']})" for c in insights['regional_cyber_crimes']])}
-            
+
             Current Risk Metrics:
             {json.dumps(current_metrics, indent=2)}
-            
-            Please analyze how these industry insights affect ALL risk metrics and provide adjustment factors.
+
+            Please analyze these industry insights and provide appropriate values for each metric.
             Consider:
-            1. How attack vectors affect threat event frequency and vulnerability
-            2. How breach costs impact all loss magnitude components
-            3. How response times affect productivity and response costs
-            4. How regional crime patterns influence overall risk exposure
-            
-            Format response as JSON with adjustment factors for each metric:
+            1. Use industry breach costs to inform replacement costs
+            2. Use response times to inform response costs
+            3. Use attack vectors to inform vulnerability metrics
+            4. Use regional crime patterns to inform threat event frequency
+
+            IMPORTANT: All confidence values must be numeric percentages between 0 and 1 (e.g., 0.75 for 75% confidence).
+
+            Format response as JSON with direct values for each metric:
             {{
                 "primary_loss_event_frequency": {{
-                    "threat_event_frequency": {{ "min": float, "likely": float, "max": float }},
-                    "vulnerability": {{ "min": float, "likely": float, "max": float }}
+                    "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "vulnerability": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                 }},
                 "secondary_loss_event_frequency": {{
-                    "SLEF": {{ "min": float, "likely": float, "max": float }}
+                    "SLEF": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                 }},
                 "primary_loss_magnitude": {{
-                    "productivity": {{ "min": float, "likely": float, "max": float }},
-                    "response": {{ "min": float, "likely": float, "max": float }},
-                    "replacement": {{ "min": float, "likely": float, "max": float }},
-                    "competitive_advantage": {{ "min": float, "likely": float, "max": float }},
-                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float }},
-                    "reputation": {{ "min": float, "likely": float, "max": float }}
+                    "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                 }},
                 "secondary_loss_magnitude": {{
-                    "productivity": {{ "min": float, "likely": float, "max": float }},
-                    "response": {{ "min": float, "likely": float, "max": float }},
-                    "replacement": {{ "min": float, "likely": float, "max": float }},
-                    "competitive_advantage": {{ "min": float, "likely": float, "max": float }},
-                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float }},
-                    "reputation": {{ "min": float, "likely": float, "max": float }}
+                    "productivity": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "response": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "replacement": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "competitive_advantage": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
+                    "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                 }}
             }}
             """
             
-            # Get GPT analysis of adjustments
+            # Get GPT analysis of new values
             response = self.gpt4_mini.generate(metrics_prompt)
-            adjustments = json.loads(response)
+            new_metrics = json.loads(response)
             
-            # Apply adjustments to all metrics
-            self._apply_metric_adjustments(current_metrics, adjustments)
+            # Apply new values directly
+            self._apply_metric_adjustments(current_metrics, new_metrics)
             
             # Log the changes
-            logger.info("=== Industry Analysis Risk Metric Adjustments ===")
-            self._log_metric_changes(current_metrics, adjustments)
+            logger.info("=== Industry Analysis Risk Metric Updates ===")
+            self._log_metric_changes(current_metrics, new_metrics)
             logger.info("=====================================")
             
         except Exception as e:
             logger.error(f"Error adjusting risk metrics: {str(e)}")
             raise
 
-    def _apply_metric_adjustments(self, current_metrics: Dict, adjustments: Dict):
-        """Apply adjustment factors to all risk metrics."""
+    def _apply_metric_adjustments(self, current_metrics: Dict, new_metrics: Dict):
+        """Update metrics with new values directly."""
         try:
-            # Helper function to apply adjustments to a metric
-            def apply_adjustment(metric: Dict, adjustment: Dict) -> Dict:
-                return {
-                    "min": metric["min"] * adjustment["min"],
-                    "likely": metric["likely"] * adjustment["likely"],
-                    "max": metric["max"] * adjustment["max"],
-                    "confidence": metric["confidence"]
-                }
-            
-            # Apply adjustments to primary loss event frequency
+            # Update primary loss event frequency
             for metric_type in ['threat_event_frequency', 'vulnerability']:
-                current_metrics['primary_loss_event_frequency'][metric_type] = apply_adjustment(
-                    current_metrics['primary_loss_event_frequency'][metric_type],
-                    adjustments['primary_loss_event_frequency'][metric_type]
-                )
+                current_metrics['primary_loss_event_frequency'][metric_type] = new_metrics['primary_loss_event_frequency'][metric_type]
             
-            # Apply adjustments to secondary loss event frequency
-            current_metrics['secondary_loss_event_frequency']['SLEF'] = apply_adjustment(
-                current_metrics['secondary_loss_event_frequency']['SLEF'],
-                adjustments['secondary_loss_event_frequency']['SLEF']
-            )
+            # Update secondary loss event frequency
+            current_metrics['secondary_loss_event_frequency']['SLEF'] = new_metrics['secondary_loss_event_frequency']['SLEF']
             
-            # Apply adjustments to primary loss magnitude
+            # Update primary loss magnitude
             for category in ['productivity', 'response', 'replacement', 'competitive_advantage', 
                            'fines_and_judgements', 'reputation']:
-                current_metrics['primary_loss_magnitude'][category] = apply_adjustment(
-                    current_metrics['primary_loss_magnitude'][category],
-                    adjustments['primary_loss_magnitude'][category]
-                )
+                current_metrics['primary_loss_magnitude'][category] = new_metrics['primary_loss_magnitude'][category]
             
-            # Apply adjustments to secondary loss magnitude
+            # Update secondary loss magnitude
             for category in ['productivity', 'response', 'replacement', 'competitive_advantage', 
                            'fines_and_judgements', 'reputation']:
-                current_metrics['secondary_loss_magnitude'][category] = apply_adjustment(
-                    current_metrics['secondary_loss_magnitude'][category],
-                    adjustments['secondary_loss_magnitude'][category]
-                )
+                current_metrics['secondary_loss_magnitude'][category] = new_metrics['secondary_loss_magnitude'][category]
             
         except Exception as e:
-            logger.error(f"Error applying metric adjustments: {str(e)}")
+            logger.error(f"Error updating metrics: {str(e)}")
             raise
 
-    def _log_metric_changes(self, current_metrics: Dict, adjustments: Dict):
+    def _log_metric_changes(self, current_metrics: Dict, new_metrics: Dict):
         """Log all metric changes for transparency."""
         try:
             # Log PLEF changes
@@ -524,8 +505,7 @@ class RiskProcessor:
             for metric_type in ['threat_event_frequency', 'vulnerability']:
                 for value_type in ['min', 'likely', 'max']:
                     old_val = current_metrics['primary_loss_event_frequency'][metric_type][value_type]
-                    adjustment = adjustments['primary_loss_event_frequency'][metric_type][value_type]
-                    new_val = old_val * adjustment
+                    new_val = new_metrics['primary_loss_event_frequency'][metric_type][value_type]
                     change = new_val - old_val
                     direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
                     logger.info(f"{metric_type} {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
@@ -534,8 +514,7 @@ class RiskProcessor:
             logger.info("\nSecondary Loss Event Frequency Changes:")
             for value_type in ['min', 'likely', 'max']:
                 old_val = current_metrics['secondary_loss_event_frequency']['SLEF'][value_type]
-                adjustment = adjustments['secondary_loss_event_frequency']['SLEF'][value_type]
-                new_val = old_val * adjustment
+                new_val = new_metrics['secondary_loss_event_frequency']['SLEF'][value_type]
                 change = new_val - old_val
                 direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
                 logger.info(f"SLEF {value_type}: {old_val:.3f} -> {new_val:.3f} ({direction} by {abs(change):.3f})")
@@ -547,8 +526,7 @@ class RiskProcessor:
                                'fines_and_judgements', 'reputation']:
                     for value_type in ['min', 'likely', 'max']:
                         old_val = current_metrics[magnitude_type][category][value_type]
-                        adjustment = adjustments[magnitude_type][category][value_type]
-                        new_val = old_val * adjustment
+                        new_val = new_metrics[magnitude_type][category][value_type]
                         change = new_val - old_val
                         direction = "increased" if change > 0 else "decreased" if change < 0 else "unchanged"
                         logger.info(f"{category} {value_type}: ${old_val:,.2f} -> ${new_val:,.2f} ({direction} by ${abs(change):,.2f})")
