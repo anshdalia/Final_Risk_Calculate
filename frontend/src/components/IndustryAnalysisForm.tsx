@@ -77,11 +77,8 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                         }}
                     >
                         Average breach cost in {riskState.user_inputs.industry}: ${(riskState.industry_analysis?.insights?.breach_cost?.amount || 0).toLocaleString()} ({riskState.industry_analysis?.insights?.breach_cost?.year})
-                        <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
+                        <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'primary.main' }}>
                             Source: {riskState.industry_analysis?.insights?.breach_cost?.source}
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-                            • Industry-specific breach costs help adjust loss magnitude metrics
                         </Typography>
                     </Alert>
                     <Alert 
@@ -97,11 +94,8 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                         Primary attack vectors: {riskState.industry_analysis?.insights?.attack_vectors?.map(vector => 
                             `${vector.type} (${vector.percentage}%)`
                         ).join(', ')}
-                        <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
+                        <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'primary.main' }}>
                             Source: {riskState.industry_analysis?.insights?.attack_vectors?.[0]?.source}
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-                            • Attack vector distribution influences threat event frequency and vulnerability metrics
                         </Typography>
                     </Alert>
                     <Alert 
@@ -116,11 +110,8 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                     >
                         Mean time to identify: {riskState.industry_analysis?.insights?.response_times?.time_to_identify} days, 
                         Mean time to contain: {riskState.industry_analysis?.insights?.response_times?.time_to_contain} days
-                        <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'text.secondary' }}>
+                        <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'primary.main' }}>
                             Source: {riskState.industry_analysis?.insights?.response_times?.source}
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-                            • Response times impact productivity and response cost metrics
                         </Typography>
                     </Alert>
                 </Box>
@@ -145,9 +136,6 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                                 </Typography>
                             ))}
                         </Stack>
-                        <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-                            • Regional crime patterns help adjust threat event frequency and vulnerability metrics
-                        </Typography>
                     </Alert>
                 </Box>
             </Stack>
@@ -187,6 +175,19 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                                 Risk Scenarios Assessment
                             </Typography>
                         </Box>
+                        <Alert 
+                            severity="warning" 
+                            icon={false}
+                            sx={{ 
+                                mb: 2,
+                                backgroundColor: '#f5f5f5',  // Light gray background
+                                color: '#424242',  // Dark gray text
+                                border: '1px solid #e0e0e0', // Light gray border
+                                '& .MuiAlert-message': { p: 0 }
+                            }}
+                        >
+                            We are analyzing the highest risk scenario to provide a comprehensive risk assessment. This scenario represents the most severe potential impact on your organization.
+                        </Alert>
                         <Box sx={{ flexGrow: 1 }}>
                             <ScenariosDisplay 
                                 scenarios={riskState.scenarios} 
