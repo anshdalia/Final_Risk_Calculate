@@ -274,17 +274,14 @@ class RiskProcessor:
             # Get current metrics
             current_metrics = self.state.risk_metrics
             
-            # Get industry-specific insights from GPT
+            # Step 1: Get industry-specific insights
             industry_prompt = f"""
             Analyze the following organization's risk profile and provide industry-specific insights:
             Industry: {self.state.user_inputs['industry']}
             Location: {self.state.user_inputs['location']}
             Employee Count: {self.state.user_inputs['employees']}
             
-            Current Risk Metrics:
-            {json.dumps(current_metrics, indent=2)}
-            
-            Please provide:
+            Please provide detailed industry insights focusing on:
             1. Industry-specific breach costs and sources
             2. Primary attack vectors and their distribution
             3. Mean time to identify and contain breaches
@@ -301,20 +298,64 @@ class RiskProcessor:
                     "breach_cost": {{
                         "amount": float,
                         "year": int,
-                        "source": "string"
+                        "source": "string",
+                        "analysis": "string"
                     }},
                     "attack_vectors": [
-                        {{ "type": "string", "percentage": float, "source": "string" }}
+                        {{ 
+                            "type": "string", 
+                            "percentage": float, 
+                            "source": "string",
+                            "impact_analysis": "string"
+                        }}
                     ],
                     "response_times": {{
                         "time_to_identify": int,
                         "time_to_contain": int,
-                        "source": "string"
+                        "source": "string",
+                        "analysis": "string"
                     }}
                 }},
                 "regional_cyber_crimes": [
-                    {{ "crime_type": "string", "statistics": "string", "year": int }}
-                ],
+                    {{ 
+                        "crime_type": "string", 
+                        "statistics": "string", 
+                        "year": int,
+                        "regional_impact": "string"
+                    }}
+                ]
+            }}
+            """
+            
+            # Get industry insights
+            response = self.gpt4_mini.generate(industry_prompt)
+            analysis = json.loads(response)
+            
+            # Store insights
+            insights = {
+                'insights': analysis['insights'],
+                'regional_cyber_crimes': analysis['regional_cyber_crimes']
+            }
+            self.state.industry_analysis = insights
+            
+            # Step 2: Use insights to adjust metrics
+            metrics_prompt = f"""
+            Based on these industry insights, analyze the risk profile and provide appropriate metric values:
+
+            Industry Insights:
+            Breach Costs: ${analysis['insights']['breach_cost']['amount']} ({analysis['insights']['breach_cost']['analysis']})
+            Attack Vectors: {', '.join([f"{v['type']} ({v['percentage']}% - {v['impact_analysis']})" for v in analysis['insights']['attack_vectors']])}
+            Response Times: {analysis['insights']['response_times']['time_to_identify']} days to identify, {analysis['insights']['response_times']['time_to_contain']} days to contain ({analysis['insights']['response_times']['analysis']})
+            Regional Impact: {', '.join([f"{c['crime_type']} - {c['regional_impact']}" for c in analysis['regional_cyber_crimes']])}
+
+            Current Risk Metrics:
+            {json.dumps(current_metrics, indent=2)}
+
+            Analyze these industry insights and determine appropriate values for all risk metrics.
+            Provide a detailed explanation of how the industry data influenced your assessment.
+
+            Format response as JSON with:
+            {{
                 "risk_metrics": {{
                     "primary_loss_event_frequency": {{
                         "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
@@ -339,29 +380,37 @@ class RiskProcessor:
                         "fines_and_judgements": {{ "min": float, "likely": float, "max": float, "confidence": float }},
                         "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                     }}
-                }}
+                }},
+                "explanation": "string"
             }}
             """
             
-            # Get GPT analysis
-            response = self.gpt4_mini.generate(industry_prompt)
-            analysis = json.loads(response)
+            # Get metric adjustments based on insights
+            metrics_response = self.gpt4_mini.generate(metrics_prompt)
+            metrics_analysis = json.loads(metrics_response)
             
-            # Extract insights and new metrics
-            insights = {
-                'insights': analysis['insights'],
-                'regional_cyber_crimes': analysis['regional_cyber_crimes']
+            # Store the current metrics for logging
+            previous_metrics = {
+                'primary_loss_event_frequency': dict(current_metrics['primary_loss_event_frequency']),
+                'secondary_loss_event_frequency': dict(current_metrics['secondary_loss_event_frequency']),
+                'primary_loss_magnitude': dict(current_metrics['primary_loss_magnitude']),
+                'secondary_loss_magnitude': dict(current_metrics['secondary_loss_magnitude'])
             }
             
-            # Apply new metrics directly
-            self._apply_metric_adjustments(current_metrics, analysis['risk_metrics'])
-            
-            # Update risk state with insights
-            self.state.industry_analysis = insights
+            # Apply the new metrics and update state
+            new_metrics = metrics_analysis['risk_metrics']
+            self.state.update_risk_metrics(**new_metrics)
             
             # Log the changes
             logger.info("=== Industry Analysis Risk Metric Updates ===")
-            self._log_metric_changes(current_metrics, analysis['risk_metrics'])
+            logger.info("\nIndustry Insights Applied:")
+            logger.info(f"Breach Costs: ${analysis['insights']['breach_cost']['amount']} - {analysis['insights']['breach_cost']['analysis']}")
+            for vector in analysis['insights']['attack_vectors']:
+                logger.info(f"Attack Vector: {vector['type']} ({vector['percentage']}%) - {vector['impact_analysis']}")
+            logger.info(f"Response Times: {analysis['insights']['response_times']['analysis']}")
+            logger.info("\nMetric Changes:")
+            self._log_metric_changes(previous_metrics, new_metrics)
+            logger.info(f"\nExplanation: {metrics_analysis['explanation']}")
             logger.info("=====================================")
             
             return self.state.get_current_state()
