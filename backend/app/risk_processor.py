@@ -20,18 +20,28 @@ class RiskProcessor:
                                  location, additional_factors)
         
         # Generate prompt for GPT-4-mini to get initial estimates
-        prompt = f"""As a cybersecurity risk analyst, estimate ALL initial risk metrics for:
+        prompt = f"""As a cybersecurity risk analyst, estimate ALL initial risk metrics for considering the company profile:
+
         Industry: {industry}
         Location: {location}
         Company Size: {employees} employees
         Revenue: ${revenue:,.2f}
         Additional Factors: {', '.join(additional_factors or [])}
-        
-        Provide comprehensive initial risk estimates for ALL metrics, considering the company profile.
-        Include 6 specific questions about their security measures that would help refine these estimates.
-        
+
+        First, provide a formalized risk statement following ISO 27001 format that captures the key risk factors.
+        The statement should be clear, concise, and focused on the organization's specific risk profile.
+
+        Then provide comprehensive initial risk estimates for ALL metrics, considering the company profile.
+        Generate 6 specific, targeted questions that would help refine these estimates. The questions should be:
+        1. Based on the company's industry, size, location, and additional factors
+        2. Mix of True/False and short-answer questions
+        3. Focused on specific security measures or incidents
+        4. Easy to answer with brief responses
+        5. Relevant to the company's risk profile
+
         Format response as JSON with:
         {{
+            "risk_statement": "string",
             "risk_metrics": {{
                 "primary_loss_event_frequency": {{
                     "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
@@ -64,12 +74,12 @@ class RiskProcessor:
                 {{ "description": str, "severity_level": "LOW", "potential_impact": str }}
             ],
             "questions": [
-                "Question about security controls?",
-                "Question about incident history?",
-                "Question about data protection?",
-                "Question about response plans?",
-                "Question about training?",
-                "Question about technical measures?"
+                "Question about specific security measure or incident?",
+                "Question about specific security measure or incident?",
+                "Question about specific security measure or incident?",
+                "Question about specific security measure or incident?",
+                "Question about specific security measure or incident?",
+                "Question about specific security measure or incident?"
             ]
         }}"""
         
@@ -78,10 +88,15 @@ class RiskProcessor:
             response = self.gpt4_mini.generate(prompt)
             analysis = json.loads(response)
         
-            # Log initial estimates
-            logger.info("=== Initial GPT Risk Estimates ===")
+            # Log initial estimates and risk statement
+            logger.info("=== Initial Risk Assessment ===")
             logger.info(f"Company Profile: {industry} company, {employees} employees")
             logger.info(f"Risk Factors: {', '.join(additional_factors or [])}")
+            
+            # Log the formalized risk statement
+            logger.info("\nFormalized Risk Statement (ISO 27001):")
+            logger.info(analysis['risk_statement'])
+            
             logger.info("\nInitial Risk Metrics:")
             logger.info(json.dumps(analysis['risk_metrics'], indent=2))
             logger.info(f"\nExplanation: {analysis['explanation']}")
