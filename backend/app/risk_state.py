@@ -46,6 +46,9 @@ class RiskState:
             "additional_factors": []
         }
         
+        # Initialize risk statement
+        self.risk_statement = ""
+        
         # All scenarios
         self.scenarios = []
         
@@ -137,6 +140,12 @@ class RiskState:
         logger.info("Setting remediation suggestions")
         self.remediation_suggestions = suggestions
         logger.debug(f"Remediation suggestions set: {suggestions}")
+    
+    def set_risk_statement(self, statement: str):
+        """Set the risk statement"""
+        logger.info("Setting risk statement")
+        self.risk_statement = statement
+        logger.debug(f"Risk statement set: {statement}")
     
     def get_current_state(self) -> Dict:
         """Get complete current state"""

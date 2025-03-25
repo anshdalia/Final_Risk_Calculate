@@ -19,6 +19,11 @@ class RiskProcessor:
         self.state.set_user_inputs(revenue, employees, industry, 
                                  location, additional_factors)
         
+        # Log current risk statement (should be empty at start)
+        logger.info("\n=== Initial Input - Current Risk Statement ===")
+        logger.info(f"Current Risk Statement: {self.state.risk_statement}")
+        logger.info("=====================================\n")
+        
         # Generate prompt for GPT-4-mini to get initial estimates
         prompt = f"""As a cybersecurity risk analyst, estimate ALL initial risk metrics for considering the company profile:
 
@@ -28,8 +33,7 @@ class RiskProcessor:
         Revenue: ${revenue:,.2f}
         Additional Factors: {', '.join(additional_factors or [])}
 
-        First, provide a formalized risk statement following ISO 27001 format that captures the key risk factors.
-        The statement should be clear, concise, and focused on the organization's specific risk profile.
+        First, provide a formalized risk statement following ISO 27001 format that captures the key risk factors in a clear and concise manner.
 
         Then provide comprehensive initial risk estimates for ALL metrics, considering the company profile.
         Generate 6 specific, targeted questions that would help refine these estimates. The questions should be:
@@ -96,6 +100,11 @@ class RiskProcessor:
             # Log the formalized risk statement
             logger.info("\nFormalized Risk Statement (ISO 27001):")
             logger.info(analysis['risk_statement'])
+            logger.info("\nRisk Statement JSON:")
+            logger.info(json.dumps({"risk_statement": analysis['risk_statement']}, indent=2))
+            
+            # Store the risk statement
+            self.state.set_risk_statement(analysis['risk_statement'])
             
             logger.info("\nInitial Risk Metrics:")
             logger.info(json.dumps(analysis['risk_metrics'], indent=2))
@@ -184,6 +193,11 @@ class RiskProcessor:
     
     def process_dynamic_questions(self, answers: Dict[str, str]) -> Dict:
         """Step 2: Process answers and adjust risk metrics"""
+        # Log current risk statement before processing
+        logger.info("\n=== Dynamic Questions - Current Risk Statement ===")
+        logger.info(f"Current Risk Statement: {self.state.risk_statement}")
+        logger.info("=====================================\n")
+        
         # Store answers
         for question, answer in answers.items():
             self.state.add_question_answer(question, answer)
@@ -192,7 +206,7 @@ class RiskProcessor:
         current_metrics = self.state.get_current_state()['risk_metrics']
         
         # Generate prompt for GPT-4-mini
-        prompt = f"""As a cybersecurity risk analyst, review these security measures and adjust ALL risk metrics:
+        prompt = f"""As a cybersecurity risk analyst, review these security measures and adjust ALL risk metrics. Do not change the risk statement:
         
         Current Risk Metrics:
         {json.dumps(current_metrics, indent=2)}
@@ -205,6 +219,7 @@ class RiskProcessor:
         
         Format response as JSON with:
         {{
+            "risk_statement": "string",
             "risk_metrics": {{
                 "primary_loss_event_frequency": {{
                     "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
@@ -242,6 +257,12 @@ class RiskProcessor:
         # Log the changes
         logger.info("=== Risk Metric Adjustments Based on Security Measures ===")
         new_metrics = analysis['risk_metrics']
+        
+        # Log the risk statement
+        logger.info("\nRisk Statement:")
+        logger.info(analysis['risk_statement'])
+        logger.info("\nRisk Statement JSON:")
+        logger.info(json.dumps({"risk_statement": analysis['risk_statement']}, indent=2))
         
         # Log PLEF changes
         logger.info("\nPrimary Loss Event Frequency Changes:")
@@ -286,6 +307,11 @@ class RiskProcessor:
     def process_industry_analysis(self) -> Dict:
         """Process industry analysis and adjust risk metrics based on industry reports."""
         try:
+            # Log current risk statement before processing
+            logger.info("\n=== Industry Analysis - Current Risk Statement ===")
+            logger.info(f"Current Risk Statement: {self.state.risk_statement}")
+            logger.info("=====================================\n")
+            
             # Get current metrics
             current_metrics = self.state.risk_metrics
             
@@ -368,9 +394,11 @@ class RiskProcessor:
 
             Analyze these industry insights and determine appropriate values for all risk metrics.
             Provide a detailed explanation of how the industry data influenced your assessment.
+            Do not change the risk statement.
 
             Format response as JSON with:
             {{
+                "risk_statement": "string",
                 "risk_metrics": {{
                     "primary_loss_event_frequency": {{
                         "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
@@ -418,12 +446,20 @@ class RiskProcessor:
             
             # Log the changes
             logger.info("=== Industry Analysis Risk Metric Updates ===")
+            
+            # Log the risk statement
+            logger.info("\nRisk Statement:")
+            logger.info(metrics_analysis['risk_statement'])
+            logger.info("\nRisk Statement JSON:")
+            logger.info(json.dumps({"risk_statement": metrics_analysis['risk_statement']}, indent=2))
+            
             logger.info("\nIndustry Insights Applied:")
             logger.info(f"Breach Costs: ${analysis['insights']['breach_cost']['amount']} - {analysis['insights']['breach_cost']['analysis']}")
             for vector in analysis['insights']['attack_vectors']:
                 logger.info(f"Attack Vector: {vector['type']} ({vector['percentage']}%) - {vector['impact_analysis']}")
             logger.info(f"Response Times: {analysis['insights']['response_times']['analysis']}")
             logger.info("\nMetric Changes:")
+            
             self._log_metric_changes(previous_metrics, new_metrics)
             logger.info(f"\nExplanation: {metrics_analysis['explanation']}")
             logger.info("=====================================")
@@ -492,9 +528,11 @@ class RiskProcessor:
             4. Use regional crime patterns to inform threat event frequency
 
             IMPORTANT: All confidence values must be numeric percentages between 0 and 1 (e.g., 0.75 for 75% confidence).
-
+            Do not change the risk statement.
             Format response as JSON with direct values for each metric:
+            
             {{
+                "risk_statement": "string",
                 "primary_loss_event_frequency": {{
                     "threat_event_frequency": {{ "min": float, "likely": float, "max": float, "confidence": float }},
                     "vulnerability": {{ "min": float, "likely": float, "max": float, "confidence": float }}
