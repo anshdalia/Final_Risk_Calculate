@@ -94,29 +94,29 @@ class LossMagnitudeCategory(BaseModel):
     min: float
     likely: float
     max: float
-    confidence: str = "medium"
+    confidence: float = 4.0
 
 class LossMagnitude(BaseModel):
     productivity: LossMagnitudeCategory
     response: LossMagnitudeCategory
     replacement: LossMagnitudeCategory
+    fines: LossMagnitudeCategory
     competitive_advantage: LossMagnitudeCategory
-    fines_and_judgements: LossMagnitudeCategory
     reputation: LossMagnitudeCategory
+    relationship: LossMagnitudeCategory
 
 class RangeValue(BaseModel):
     min: float
     likely: float
     max: float
-    confidence: str = "medium"
+    confidence: float = 4.0
 
 class SimulationInput(BaseModel):
     tef: RangeValue
-    vul: RangeValue
-    primary_loss_magnitude: LossMagnitude
+    vuln: RangeValue
+    plm: LossMagnitude
     slef: RangeValue
-    secondary_loss_magnitude: LossMagnitude
-    dlef: Optional[RangeValue] = None
+    slm: LossMagnitude
 
 @app.post("/api/initial-input")
 async def process_initial_input(input_data: InitialInput):
@@ -241,7 +241,7 @@ def format_simulation_input(request: SimulationInput) -> Dict:
                 'Confidence': getattr(loss_magnitude, category).confidence
             }
             for category in ['productivity', 'response', 'replacement', 
-                           'competitive_advantage', 'fines_and_judgements', 'reputation']
+                           'competitive_advantage', 'fines', 'reputation', 'relationship']
         }
 
     return {
@@ -252,13 +252,13 @@ def format_simulation_input(request: SimulationInput) -> Dict:
             'confidence': request.tef.confidence
         },
         'vul': {
-            'min': request.vul.min,
-            'likely': request.vul.likely,
-            'max': request.vul.max,
-            'confidence': request.vul.confidence
+            'min': request.vuln.min,
+            'likely': request.vuln.likely,
+            'max': request.vuln.max,
+            'confidence': request.vuln.confidence
         },
         'pl': {
-            'categories': format_loss_categories(request.primary_loss_magnitude)
+            'categories': format_loss_categories(request.plm)
         },
         'slef': {
             'min': request.slef.min,
@@ -267,13 +267,13 @@ def format_simulation_input(request: SimulationInput) -> Dict:
             'confidence': request.slef.confidence
         },
         'sl': {
-            'categories': format_loss_categories(request.secondary_loss_magnitude)
+            'categories': format_loss_categories(request.slm)
         },
         'dlef': {
             'min': request.dlef.min if request.dlef else None,
             'likely': request.dlef.likely if request.dlef else None,
             'max': request.dlef.max if request.dlef else None,
-            'confidence': request.dlef.confidence if request.dlef else "medium"
+            'confidence': request.dlef.confidence if request.dlef else 4.0
         }
     }
 
@@ -297,43 +297,51 @@ async def simulate_risk(request: SimulationInput):
         logger.info("Starting Monte Carlo simulation")
         logger.info(f"Received simulation request: {request}")
         
-        # Calculate total loss magnitudes by summing all categories
-        def sum_loss_categories(loss_magnitude: LossMagnitude) -> Dict[str, float]:
-            categories = ['productivity', 'response', 'replacement', 
-                        'competitive_advantage', 'fines_and_judgements', 'reputation']
-            total = {
-                'min': 0,
-                'likely': 0,
-                'max': 0
-            }
-            for category in categories:
-                cat_values = getattr(loss_magnitude, category)
-                total['min'] += cat_values.min
-                total['likely'] += cat_values.likely
-                total['max'] += cat_values.max
-            return total
-
-        # Sum up primary and secondary loss magnitudes
-        plm_total = sum_loss_categories(request.primary_loss_magnitude)
-        slm_total = sum_loss_categories(request.secondary_loss_magnitude)
-
-        # Initialize calculator with flattened values
+        # Initialize calculator with new format
         calculator = Calculator(
-            tef_min=request.tef.min,
-            tef_likely=request.tef.likely,
-            tef_max=request.tef.max,
-            vuln_min=request.vul.min,
-            vuln_likely=request.vul.likely,
-            vuln_max=request.vul.max,
-            plm_min=plm_total['min'],
-            plm_likely=plm_total['likely'],
-            plm_max=plm_total['max'],
-            slef_min=request.slef.min,
-            slef_likely=request.slef.likely,
-            slef_max=request.slef.max,
-            slm_min=slm_total['min'],
-            slm_likely=slm_total['likely'],
-            slm_max=slm_total['max']
+            tef=(request.tef.min, request.tef.likely, request.tef.max, request.tef.confidence),
+            vuln=(request.vuln.min, request.vuln.likely, request.vuln.max, request.vuln.confidence),
+            plm_components={
+                'productivity': (request.plm.productivity.min, 
+                               request.plm.productivity.likely,
+                               request.plm.productivity.max,
+                               request.plm.productivity.confidence),
+                'response': (request.plm.response.min,
+                           request.plm.response.likely,
+                           request.plm.response.max,
+                           request.plm.response.confidence),
+                'replacement': (request.plm.replacement.min,
+                              request.plm.replacement.likely,
+                              request.plm.replacement.max,
+                              request.plm.replacement.confidence)
+            },
+            slef=(request.slef.min, request.slef.likely, request.slef.max, request.slef.confidence),
+            slm_components={
+                'response': (request.slm.response.min,
+                           request.slm.response.likely,
+                           request.slm.response.max,
+                           request.slm.response.confidence),
+                'replacement': (request.slm.replacement.min,
+                              request.slm.replacement.likely,
+                              request.slm.replacement.max,
+                              request.slm.replacement.confidence),
+                'competitive_advantage': (request.slm.competitive_advantage.min,
+                                        request.slm.competitive_advantage.likely,
+                                        request.slm.competitive_advantage.max,
+                                        request.slm.competitive_advantage.confidence),
+                'fines': (request.slm.fines.min,
+                          request.slm.fines.likely,
+                          request.slm.fines.max,
+                          request.slm.fines.confidence),
+                'reputation': (request.slm.reputation.min,
+                             request.slm.reputation.likely,
+                             request.slm.reputation.max,
+                             request.slm.reputation.confidence),
+                'relationship': (request.slm.relationship.min,
+                             request.slm.relationship.likely,
+                             request.slm.relationship.max,
+                             request.slm.relationship.confidence)
+            }
         )
         
         # Run simulation

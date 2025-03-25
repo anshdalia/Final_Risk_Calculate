@@ -23,12 +23,6 @@ interface SimulationResults {
     };
 }
 
-const mapConfidenceToString = (confidence: number): string => {
-    if (confidence >= 0.8) return 'high';
-    if (confidence >= 0.5) return 'medium';
-    return 'low';
-};
-
 const prepareSimulationData = (riskState: RiskState) => {
     const metrics = riskState.risk_metrics;
     if (!metrics) {
@@ -41,7 +35,7 @@ const prepareSimulationData = (riskState: RiskState) => {
         min: metric.min,
         likely: metric.likely,
         max: metric.max,
-        confidence: mapConfidenceToString(metric.confidence)
+        confidence: metric.confidence  // Keep as number
     });
 
     // Helper function to format loss magnitude categories
@@ -50,16 +44,17 @@ const prepareSimulationData = (riskState: RiskState) => {
         response: formatRiskMetric(magnitude.response),
         replacement: formatRiskMetric(magnitude.replacement),
         competitive_advantage: formatRiskMetric(magnitude.competitive_advantage),
-        fines_and_judgements: formatRiskMetric(magnitude.fines_and_judgements),
-        reputation: formatRiskMetric(magnitude.reputation)
+        fines: formatRiskMetric(magnitude.fines),
+        reputation: formatRiskMetric(magnitude.reputation),
+        relationship: formatRiskMetric(magnitude.relationship)
     });
 
     return {
         tef: formatRiskMetric(metrics.primary_loss_event_frequency.threat_event_frequency),
-        vul: formatRiskMetric(metrics.primary_loss_event_frequency.vulnerability),
-        primary_loss_magnitude: formatLossMagnitude(metrics.primary_loss_magnitude),
+        vuln: formatRiskMetric(metrics.primary_loss_event_frequency.vulnerability),
+        plm: formatLossMagnitude(metrics.primary_loss_magnitude),
         slef: formatRiskMetric(metrics.secondary_loss_event_frequency.SLEF),
-        secondary_loss_magnitude: formatLossMagnitude(metrics.secondary_loss_magnitude)
+        slm: formatLossMagnitude(metrics.secondary_loss_magnitude)
     };
 };
 
@@ -211,7 +206,7 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                 // Calculate total loss magnitudes
                 const calculateTotalLoss = (magnitude: LossMagnitude) => {
                     const categories = ['productivity', 'response', 'replacement', 
-                                     'competitive_advantage', 'fines_and_judgements', 'reputation'];
+                                     'competitive_advantage', 'fines', 'reputation', 'relationship'];
                     return {
                         min: categories.reduce((sum, cat) => sum + magnitude[cat].min, 0),
                         likely: categories.reduce((sum, cat) => sum + magnitude[cat].likely, 0),
@@ -228,35 +223,37 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                         min: metrics.primary_loss_event_frequency.threat_event_frequency.min,
                         likely: metrics.primary_loss_event_frequency.threat_event_frequency.likely,
                         max: metrics.primary_loss_event_frequency.threat_event_frequency.max,
-                        confidence: mapConfidenceToString(metrics.primary_loss_event_frequency.threat_event_frequency.confidence)
+                        confidence: metrics.primary_loss_event_frequency.threat_event_frequency.confidence
                     },
-                    vul: {
+                    vuln: {
                         min: metrics.primary_loss_event_frequency.vulnerability.min,
                         likely: metrics.primary_loss_event_frequency.vulnerability.likely,
                         max: metrics.primary_loss_event_frequency.vulnerability.max,
-                        confidence: mapConfidenceToString(metrics.primary_loss_event_frequency.vulnerability.confidence)
+                        confidence: metrics.primary_loss_event_frequency.vulnerability.confidence
                     },
-                    primary_loss_magnitude: {
-                        productivity: { ...metrics.primary_loss_magnitude.productivity, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.productivity.confidence) },
-                        response: { ...metrics.primary_loss_magnitude.response, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.response.confidence) },
-                        replacement: { ...metrics.primary_loss_magnitude.replacement, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.replacement.confidence) },
-                        competitive_advantage: { ...metrics.primary_loss_magnitude.competitive_advantage, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.competitive_advantage.confidence) },
-                        fines_and_judgements: { ...metrics.primary_loss_magnitude.fines_and_judgements, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.fines_and_judgements.confidence) },
-                        reputation: { ...metrics.primary_loss_magnitude.reputation, confidence: mapConfidenceToString(metrics.primary_loss_magnitude.reputation.confidence) }
+                    plm: {
+                        productivity: { ...metrics.primary_loss_magnitude.productivity },
+                        response: { ...metrics.primary_loss_magnitude.response },
+                        replacement: { ...metrics.primary_loss_magnitude.replacement },
+                        competitive_advantage: { ...metrics.primary_loss_magnitude.competitive_advantage },
+                        fines: { ...metrics.primary_loss_magnitude.fines },
+                        reputation: { ...metrics.primary_loss_magnitude.reputation },
+                        relationship: { ...metrics.primary_loss_magnitude.relationship }
                     },
                     slef: {
                         min: metrics.secondary_loss_event_frequency.SLEF.min,
                         likely: metrics.secondary_loss_event_frequency.SLEF.likely,
                         max: metrics.secondary_loss_event_frequency.SLEF.max,
-                        confidence: mapConfidenceToString(metrics.secondary_loss_event_frequency.SLEF.confidence)
+                        confidence: metrics.secondary_loss_event_frequency.SLEF.confidence
                     },
-                    secondary_loss_magnitude: {
-                        productivity: { ...metrics.secondary_loss_magnitude.productivity, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.productivity.confidence) },
-                        response: { ...metrics.secondary_loss_magnitude.response, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.response.confidence) },
-                        replacement: { ...metrics.secondary_loss_magnitude.replacement, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.replacement.confidence) },
-                        competitive_advantage: { ...metrics.secondary_loss_magnitude.competitive_advantage, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.competitive_advantage.confidence) },
-                        fines_and_judgements: { ...metrics.secondary_loss_magnitude.fines_and_judgements, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.fines_and_judgements.confidence) },
-                        reputation: { ...metrics.secondary_loss_magnitude.reputation, confidence: mapConfidenceToString(metrics.secondary_loss_magnitude.reputation.confidence) }
+                    slm: {
+                        productivity: { ...metrics.secondary_loss_magnitude.productivity },
+                        response: { ...metrics.secondary_loss_magnitude.response },
+                        replacement: { ...metrics.secondary_loss_magnitude.replacement },
+                        competitive_advantage: { ...metrics.secondary_loss_magnitude.competitive_advantage },
+                        fines: { ...metrics.secondary_loss_magnitude.fines },
+                        reputation: { ...metrics.secondary_loss_magnitude.reputation },
+                        relationship: { ...metrics.secondary_loss_magnitude.relationship }
                     }
                 };
 
@@ -302,7 +299,7 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
         min: metric.min,
         likely: metric.likely,
         max: metric.max,
-        confidence: mapConfidenceToString(metric.confidence)
+        confidence: metric.confidence
     });
 
     return (

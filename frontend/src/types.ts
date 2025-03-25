@@ -19,8 +19,9 @@ export interface LossMagnitude {
     response: RiskMetric;
     replacement: RiskMetric;
     competitive_advantage: RiskMetric;
-    fines_and_judgements: RiskMetric;
+    fines: RiskMetric;
     reputation: RiskMetric;
+    relationship: RiskMetric;
 }
 
 export interface RiskMetrics {
