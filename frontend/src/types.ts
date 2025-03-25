@@ -49,6 +49,7 @@ export interface RiskState {
         location: string;
         additional_factors: string[];
     };
+    risk_statement: string;
     scenarios: Array<Scenario>;
     selected_scenario: Scenario;
     dynamic_questions: string[];

@@ -44,7 +44,8 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
         if (process.env.NODE_ENV === 'development') {
             console.log('DynamicQuestionsForm State:', {
                 questions,
-                riskState
+                riskState,
+                riskStatement: riskState?.risk_statement
             });
         }
     }, [questions, riskState]);
@@ -98,6 +99,34 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
 
     return (
         <Box sx={{ width: '100%', mb: 4 }}>
+            {/* Formalized Risk Statement Card */}
+            <Paper sx={{ p: 3, mb: 4 }}>
+                <Box sx={{ 
+                    borderBottom: '2px solid',
+                    borderColor: 'primary.main',
+                    mb: 3,
+                    pb: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <Typography 
+                        variant="h4" 
+                        sx={{ 
+                            textAlign: 'center',
+                            fontWeight: 500,
+                            fontSize: '1.75rem',
+                            color: 'primary.main'
+                        }}
+                    >
+                        Formalized Risk Statement (ISO 27001)
+                    </Typography>
+                </Box>
+                <Typography variant="body1" sx={{ textAlign: 'center' }}>
+                    {riskState?.risk_statement || 'No risk statement available'}
+                </Typography>
+            </Paper>
+
             {/* Top Section - Scenarios and Questions side by side */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 {/* Left Side - Scenarios */}
