@@ -294,10 +294,11 @@ def format_simulation_output(calculations: Dict) -> Dict:
 @app.post("/api/simulate_risk")
 async def simulate_risk(request: SimulationInput):
     try:
-        logger.info("Starting Monte Carlo simulation")
+        logger.info("=== Starting Monte Carlo Simulation ===")
         logger.info(f"Received simulation request: {request}")
         
         # Initialize calculator with new format
+        logger.info("Initializing Calculator with received data")
         calculator = Calculator(
             tef=(request.tef.min, request.tef.likely, request.tef.max, request.tef.confidence),
             vuln=(request.vuln.min, request.vuln.likely, request.vuln.max, request.vuln.confidence),
@@ -344,19 +345,26 @@ async def simulate_risk(request: SimulationInput):
             }
         )
         
+        logger.info("Calculator initialized successfully")
+        
         # Run simulation
+        logger.info("Starting simulation run")
         results = calculator.run_simulation()
+        logger.info(f"Simulation completed with {len(results)} results")
         
         # Generate output
+        logger.info("Generating output")
         output_generator = OutputGenerator(results)
         output = output_generator.generate_histogram()
         
         logger.info("Simulation completed successfully")
+        logger.info("=== End Monte Carlo Simulation ===")
         
         return output
         
     except Exception as e:
         logger.error(f"Error in simulation: {str(e)}")
+        logger.error("=== End Monte Carlo Simulation with Error ===")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

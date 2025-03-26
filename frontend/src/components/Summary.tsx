@@ -32,32 +32,94 @@ const prepareSimulationData = (riskState: RiskState) => {
         return null;
     }
 
-    // Helper function to format a risk metric
-    const formatRiskMetric = (metric: RiskMetric) => ({
-        min: metric.min,
-        likely: metric.likely,
-        max: metric.max,
-        confidence: metric.confidence  // Keep as number
-    });
+    console.log('Preparing simulation data with metrics:', metrics);
 
-    // Helper function to format loss magnitude categories
-    const formatLossMagnitude = (magnitude: LossMagnitude) => ({
-        productivity: formatRiskMetric(magnitude.productivity),
-        response: formatRiskMetric(magnitude.response),
-        replacement: formatRiskMetric(magnitude.replacement),
-        competitive_advantage: formatRiskMetric(magnitude.competitive_advantage),
-        fines: formatRiskMetric(magnitude.fines),
-        reputation: formatRiskMetric(magnitude.reputation),
-        relationship: formatRiskMetric(magnitude.relationship)
-    });
+    // Helper function to format a risk metric as an object
+    const formatRiskMetric = (metric: RiskMetric) => {
+        console.log('Formatting risk metric:', metric);
+        if (!metric || typeof metric.min === 'undefined' || typeof metric.likely === 'undefined' || typeof metric.max === 'undefined' || typeof metric.confidence === 'undefined') {
+            console.error('Invalid metric format:', metric);
+            throw new Error('Invalid metric format');
+        }
 
-    return {
-        tef: formatRiskMetric(metrics.primary_loss_event_frequency.threat_event_frequency),
-        vuln: formatRiskMetric(metrics.primary_loss_event_frequency.vulnerability),
-        plm: formatLossMagnitude(metrics.primary_loss_magnitude),
-        slef: formatRiskMetric(metrics.secondary_loss_event_frequency.SLEF),
-        slm: formatLossMagnitude(metrics.secondary_loss_magnitude)
+        // Ensure values are positive and properly ordered
+        const min = Math.max(0, metric.min);
+        const likely = Math.max(min, Math.min(metric.likely, metric.max));
+        const max = Math.max(likely, metric.max);
+
+        // For probability metrics (TEF, VULN, SLEF), ensure values are between 0 and 1
+        const isProbabilityMetric = metric.min <= 1 && metric.max <= 1;
+        if (isProbabilityMetric) {
+            return {
+                min: Math.min(1, min),
+                likely: Math.min(1, likely),
+                max: Math.min(1, max),
+                confidence: metric.confidence
+            };
+        }
+
+        // For monetary values, just ensure they're positive and properly ordered
+        return {
+            min,
+            likely,
+            max,
+            confidence: metric.confidence
+        };
     };
+
+    // Helper function to format loss magnitude components
+    const formatLossMagnitudeComponents = (magnitude: LossMagnitude) => {
+        console.log('Formatting loss magnitude:', magnitude);
+        if (!magnitude) {
+            console.error('Invalid loss magnitude:', magnitude);
+            throw new Error('Invalid loss magnitude');
+        }
+        const defaultRelationship = {
+            min: 0,
+            likely: 0,
+            max: 0,
+            confidence: 0
+        };
+
+        // Log each component before formatting
+        console.log('Productivity:', magnitude.productivity);
+        console.log('Response:', magnitude.response);
+        console.log('Replacement:', magnitude.replacement);
+        console.log('Competitive Advantage:', magnitude.competitive_advantage);
+        console.log('Fines and Judgements:', magnitude.fines_and_judgements);
+        console.log('Reputation:', magnitude.reputation);
+        console.log('Relationship:', magnitude.relationship);
+
+        return {
+            productivity: formatRiskMetric(magnitude.productivity),
+            response: formatRiskMetric(magnitude.response),
+            replacement: formatRiskMetric(magnitude.replacement),
+            competitive_advantage: formatRiskMetric(magnitude.competitive_advantage),
+            fines: formatRiskMetric(magnitude.fines_and_judgements),
+            reputation: formatRiskMetric(magnitude.reputation),
+            relationship: formatRiskMetric(magnitude.relationship || defaultRelationship)
+        };
+    };
+
+    try {
+        console.log('Formatting TEF:', metrics.primary_loss_event_frequency.threat_event_frequency);
+        console.log('Formatting VULN:', metrics.primary_loss_event_frequency.vulnerability);
+        console.log('Formatting SLEF:', metrics.secondary_loss_event_frequency.SLEF);
+
+        const result = {
+            tef: formatRiskMetric(metrics.primary_loss_event_frequency.threat_event_frequency),
+            vuln: formatRiskMetric(metrics.primary_loss_event_frequency.vulnerability),
+            plm: formatLossMagnitudeComponents(metrics.primary_loss_magnitude),
+            slef: formatRiskMetric(metrics.secondary_loss_event_frequency.SLEF),
+            slm: formatLossMagnitudeComponents(metrics.secondary_loss_magnitude)
+        };
+
+        console.log('Successfully prepared simulation data:', result);
+        return result;
+    } catch (error) {
+        console.error('Error preparing simulation data:', error);
+        return null;
+    }
 };
 
 // Add this helper function for formatting currency
@@ -150,72 +212,27 @@ export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }
     }, [riskState]);
 
     useEffect(() => {
+        console.log('=== Simulation Effect Triggered ===');
+        console.log('Current risk_metrics:', riskState.risk_metrics);
+        
         const runSimulation = async () => {
+            console.log('=== Starting Simulation ===');
             if (!riskState.risk_metrics) {
                 console.log('No risk metrics available for simulation');
                 return;
             }
 
             try {
-                const metrics = riskState.risk_metrics;
-                console.log('Running simulation with metrics:', metrics);
+                console.log('Preparing simulation data...');
+                const simulationData = prepareSimulationData(riskState);
+                if (!simulationData) {
+                    console.error('Failed to prepare simulation data');
+                    return;
+                }
 
-                // Calculate total loss magnitudes
-                const calculateTotalLoss = (magnitude: LossMagnitude) => {
-                    const categories = ['productivity', 'response', 'replacement', 
-                                     'competitive_advantage', 'fines', 'reputation', 'relationship'];
-                    return {
-                        min: categories.reduce((sum, cat) => sum + magnitude[cat].min, 0),
-                        likely: categories.reduce((sum, cat) => sum + magnitude[cat].likely, 0),
-                        max: categories.reduce((sum, cat) => sum + magnitude[cat].max, 0)
-                    };
-                };
+                console.log('Prepared simulation data:', JSON.stringify(simulationData, null, 2));
 
-                const plmTotal = calculateTotalLoss(metrics.primary_loss_magnitude);
-                const slmTotal = calculateTotalLoss(metrics.secondary_loss_magnitude);
-
-                // Format the data according to the backend's Calculator class expectations
-                const simulationData = {
-                    tef: {
-                        min: metrics.primary_loss_event_frequency.threat_event_frequency.min,
-                        likely: metrics.primary_loss_event_frequency.threat_event_frequency.likely,
-                        max: metrics.primary_loss_event_frequency.threat_event_frequency.max,
-                        confidence: metrics.primary_loss_event_frequency.threat_event_frequency.confidence
-                    },
-                    vuln: {
-                        min: metrics.primary_loss_event_frequency.vulnerability.min,
-                        likely: metrics.primary_loss_event_frequency.vulnerability.likely,
-                        max: metrics.primary_loss_event_frequency.vulnerability.max,
-                        confidence: metrics.primary_loss_event_frequency.vulnerability.confidence
-                    },
-                    plm: {
-                        productivity: { ...metrics.primary_loss_magnitude.productivity },
-                        response: { ...metrics.primary_loss_magnitude.response },
-                        replacement: { ...metrics.primary_loss_magnitude.replacement },
-                        competitive_advantage: { ...metrics.primary_loss_magnitude.competitive_advantage },
-                        fines: { ...metrics.primary_loss_magnitude.fines },
-                        reputation: { ...metrics.primary_loss_magnitude.reputation },
-                        relationship: { ...metrics.primary_loss_magnitude.relationship }
-                    },
-                    slef: {
-                        min: metrics.secondary_loss_event_frequency.SLEF.min,
-                        likely: metrics.secondary_loss_event_frequency.SLEF.likely,
-                        max: metrics.secondary_loss_event_frequency.SLEF.max,
-                        confidence: metrics.secondary_loss_event_frequency.SLEF.confidence
-                    },
-                    slm: {
-                        productivity: { ...metrics.secondary_loss_magnitude.productivity },
-                        response: { ...metrics.secondary_loss_magnitude.response },
-                        replacement: { ...metrics.secondary_loss_magnitude.replacement },
-                        competitive_advantage: { ...metrics.secondary_loss_magnitude.competitive_advantage },
-                        fines: { ...metrics.secondary_loss_magnitude.fines },
-                        reputation: { ...metrics.secondary_loss_magnitude.reputation },
-                        relationship: { ...metrics.secondary_loss_magnitude.relationship }
-                    }
-                };
-
-                console.log('Sending simulation data:', simulationData);
-
+                console.log('Sending request to http://localhost:8000/api/simulate_risk');
                 const response = await fetch('http://localhost:8000/api/simulate_risk', {
                     method: 'POST',
                     headers: {
@@ -224,6 +241,7 @@ export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }
                     body: JSON.stringify(simulationData),
                 });
 
+                console.log('Response status:', response.status);
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('Simulation error response:', errorText);
@@ -247,8 +265,12 @@ export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }
         };
 
         if (riskState.risk_metrics) {
+            console.log('Risk metrics available, triggering simulation');
             runSimulation();
+        } else {
+            console.log('No risk metrics available, skipping simulation');
         }
+        console.log('=== End Simulation Effect ===');
     }, [riskState.risk_metrics]);
 
     // Helper function to format metrics with confidence
