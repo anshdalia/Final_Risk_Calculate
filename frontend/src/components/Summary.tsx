@@ -131,11 +131,15 @@ export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }
         const fetchRemediationStrategies = async () => {
             setLoading(true);
             try {
-                // Generate tailored strategies based on user inputs and risk metrics
-                const tailoredStrategies = generateTailoredStrategies(riskState);
-                setRemediationStrategies(tailoredStrategies);
+                // Use the remediation strategies from the state
+                if (riskState.remediation_suggestions && riskState.remediation_suggestions.length > 0) {
+                    setRemediationStrategies(riskState.remediation_suggestions);
+                } else {
+                    console.warn('No remediation strategies found in state, using defaults');
+                    setRemediationStrategies(defaultStrategies);
+                }
             } catch (error) {
-                console.error('Error generating remediation strategies:', error);
+                console.error('Error setting remediation strategies:', error);
                 setRemediationStrategies(defaultStrategies);
             } finally {
                 setLoading(false);
@@ -144,55 +148,6 @@ export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }
 
         fetchRemediationStrategies();
     }, [riskState]);
-
-    // Function to generate tailored remediation strategies
-    const generateTailoredStrategies = (state: RiskState): RemediationStrategy[] => {
-        const strategies: RemediationStrategy[] = [];
-        const metrics = state.risk_metrics;
-        const userInputs = state.user_inputs;
-
-        // Add industry-specific strategy
-        strategies.push({
-            title: `${userInputs.industry} Security Controls`,
-            description: `Implement industry-standard security measures specific to ${userInputs.industry} sector requirements.`,
-            impact: "Ensures compliance with industry regulations and best practices.",
-            implementation: `Requires coordination with ${userInputs.industry} security experts and regular audits.`
-        });
-
-        // Add size-based strategy
-        const isLargeOrg = userInputs.employees > 1000 || userInputs.revenue > 100000000;
-        strategies.push({
-            title: isLargeOrg ? "Enterprise Security Program" : "Small Business Security Essentials",
-            description: isLargeOrg 
-                ? "Establish a comprehensive enterprise security program with dedicated security team."
-                : "Implement cost-effective security measures suitable for small businesses.",
-            impact: isLargeOrg
-                ? "Comprehensive protection for large-scale operations"
-                : "Essential protection while maintaining operational efficiency",
-            implementation: isLargeOrg
-                ? "Requires significant investment in security infrastructure and personnel"
-                : "Can be implemented with minimal IT resources and managed services"
-        });
-
-        // Add risk-based strategy
-        if (metrics) {
-            const highRisk = metrics.risk_score > 0.7;
-            strategies.push({
-                title: highRisk ? "Critical Risk Mitigation" : "Preventive Controls",
-                description: highRisk
-                    ? "Immediate implementation of critical security controls to address high-risk areas."
-                    : "Strengthen existing controls and implement preventive measures.",
-                impact: highRisk
-                    ? "Significant reduction in critical vulnerabilities"
-                    : "Enhanced protection against potential threats",
-                implementation: highRisk
-                    ? "Requires urgent allocation of resources and immediate action"
-                    : "Can be implemented gradually as part of regular security updates"
-            });
-        }
-
-        return strategies;
-    };
 
     useEffect(() => {
         const runSimulation = async () => {

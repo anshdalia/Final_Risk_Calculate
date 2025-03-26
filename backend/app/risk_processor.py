@@ -433,7 +433,15 @@ class RiskProcessor:
                 }},
                 "explanation": "string",
                 "fair_score": float,  // Score from 0-10
-                "fair_score_explanation": "string"  // Brief explanation of how the score was determined
+                "fair_score_explanation": "string",  // Brief explanation of how the score was determined
+                "remediation_strategies": [
+                    {{
+                        "title": "string",
+                        "description": "string",
+                        "impact": "string",
+                        "implementation": "string"
+                    }}
+                ]  // Exactly 3 specific and unique remediation strategies based on company profile, risk metrics, and industry analysis
             }}
             """
             
@@ -458,6 +466,9 @@ class RiskProcessor:
                 metrics_analysis['fair_score'],
                 metrics_analysis['fair_score_explanation']
             )
+            
+            # Store remediation strategies
+            self.state.set_remediation_suggestions(metrics_analysis['remediation_strategies'])
             
             # Log the changes
             logger.info("=== Industry Analysis Risk Metric Updates ===")

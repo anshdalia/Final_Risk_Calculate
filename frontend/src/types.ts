@@ -41,8 +41,6 @@ export interface Scenario {
 }
 
 export interface RiskState {
-    risk_statement: string;
-    risk_metrics: RiskMetrics;
     user_inputs: {
         revenue: number;
         employees: number;
@@ -50,49 +48,53 @@ export interface RiskState {
         location: string;
         additional_factors: string[];
     };
-    scenarios: Array<Scenario>;
+    risk_metrics: {
+        primary_loss_event_frequency: PrimaryLossEventFrequency;
+        secondary_loss_event_frequency: SecondaryLossEventFrequency;
+        primary_loss_magnitude: LossMagnitude;
+        secondary_loss_magnitude: LossMagnitude;
+    };
+    scenarios: Scenario[];
     selected_scenario: Scenario;
     dynamic_questions: string[];
-    question_answers: { [key: string]: string };
+    question_answers: Record<string, string>;
     industry_analysis: {
-        insights?: {
-            breach_cost?: {
+        insights: {
+            breach_cost: {
                 amount: number;
                 year: number;
                 source: string;
+                analysis: string;
             };
-            attack_vectors?: Array<{
+            attack_vectors: Array<{
                 type: string;
                 percentage: number;
                 source: string;
+                impact_analysis: string;
             }>;
-            response_times?: {
+            response_times: {
                 time_to_identify: number;
                 time_to_contain: number;
                 source: string;
+                analysis: string;
             };
         };
-        regional_cyber_crimes?: Array<{
+        regional_cyber_crimes: Array<{
             crime_type: string;
             statistics: string;
             year: number;
+            regional_impact: string;
         }>;
     };
-    historical_analysis: {
-        past_incidents: Array<{
-            date: string;
-            description: string;
-            impact: string;
-        }>;
-        trends: Array<{
-            metric: string;
-            value: number;
-            year: number;
-        }>;
-    };
-    remediation_suggestions: string[];
+    risk_statement: string;
     fair_score: number;
     fair_score_explanation: string;
+    remediation_suggestions: Array<{
+        title: string;
+        description: string;
+        impact: string;
+        implementation: string;
+    }>;
 }
 
 export interface InitialInputFormData {
