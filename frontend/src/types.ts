@@ -21,7 +21,6 @@ export interface LossMagnitude {
     competitive_advantage: RiskMetric;
     fines: RiskMetric;
     reputation: RiskMetric;
-    relationship: RiskMetric;
 }
 
 export interface RiskMetrics {

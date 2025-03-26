@@ -103,7 +103,6 @@ class LossMagnitude(BaseModel):
     fines: LossMagnitudeCategory
     competitive_advantage: LossMagnitudeCategory
     reputation: LossMagnitudeCategory
-    relationship: LossMagnitudeCategory
 
 class RangeValue(BaseModel):
     min: float
@@ -241,7 +240,7 @@ def format_simulation_input(request: SimulationInput) -> Dict:
                 'Confidence': getattr(loss_magnitude, category).confidence
             }
             for category in ['productivity', 'response', 'replacement', 
-                           'competitive_advantage', 'fines', 'reputation', 'relationship']
+                           'competitive_advantage', 'fines', 'reputation']
         }
 
     return {
@@ -338,10 +337,6 @@ async def simulate_risk(request: SimulationInput):
                              request.slm.reputation.likely,
                              request.slm.reputation.max,
                              request.slm.reputation.confidence),
-                'relationship': (request.slm.relationship.min,
-                             request.slm.relationship.likely,
-                             request.slm.relationship.max,
-                             request.slm.relationship.confidence)
             }
         )
         

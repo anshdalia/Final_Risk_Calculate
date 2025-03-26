@@ -36,7 +36,14 @@ const prepareSimulationData = (riskState: RiskState) => {
 
     // Helper function to format a risk metric as an object
     const formatRiskMetric = (metric: RiskMetric) => {
-        console.log('Formatting risk metric:', metric);
+        console.log('\n=== Formatting Risk Metric ===');
+        console.log('Original values:', {
+            min: metric.min,
+            likely: metric.likely,
+            max: metric.max,
+            confidence: metric.confidence
+        });
+
         if (!metric || typeof metric.min === 'undefined' || typeof metric.likely === 'undefined' || typeof metric.max === 'undefined' || typeof metric.confidence === 'undefined') {
             console.error('Invalid metric format:', metric);
             throw new Error('Invalid metric format');
@@ -47,24 +54,38 @@ const prepareSimulationData = (riskState: RiskState) => {
         const likely = Math.max(min, Math.min(metric.likely, metric.max));
         const max = Math.max(likely, metric.max);
 
-        // For probability metrics (TEF, VULN, SLEF), ensure values are between 0 and 1
-        const isProbabilityMetric = metric.min <= 1 && metric.max <= 1;
+        console.log('After positive and ordering checks:', {
+            min,
+            likely,
+            max,
+            confidence: metric.confidence
+        });
+
+        // For probability metrics (VULN, SLEF), ensure values are between 0 and 1
+        const isProbabilityMetric = metric === metrics.primary_loss_event_frequency.vulnerability || 
+                                   metric === metrics.secondary_loss_event_frequency.SLEF;
+        console.log('Is probability metric?', isProbabilityMetric);
+
         if (isProbabilityMetric) {
-            return {
+            const result = {
                 min: Math.min(1, min),
                 likely: Math.min(1, likely),
                 max: Math.min(1, max),
                 confidence: metric.confidence
             };
+            console.log('Final probability values:', result);
+            return result;
         }
 
-        // For monetary values, just ensure they're positive and properly ordered
-        return {
+        // For monetary values and TEF, just ensure they're positive and properly ordered
+        const result = {
             min,
             likely,
             max,
             confidence: metric.confidence
         };
+        console.log('Final values:', result);
+        return result;
     };
 
     // Helper function to format loss magnitude components
@@ -74,13 +95,7 @@ const prepareSimulationData = (riskState: RiskState) => {
             console.error('Invalid loss magnitude:', magnitude);
             throw new Error('Invalid loss magnitude');
         }
-        const defaultRelationship = {
-            min: 0,
-            likely: 0,
-            max: 0,
-            confidence: 0
-        };
-
+      
         // Log each component before formatting
         console.log('Productivity:', magnitude.productivity);
         console.log('Response:', magnitude.response);
@@ -88,7 +103,6 @@ const prepareSimulationData = (riskState: RiskState) => {
         console.log('Competitive Advantage:', magnitude.competitive_advantage);
         console.log('Fines and Judgements:', magnitude.fines_and_judgements);
         console.log('Reputation:', magnitude.reputation);
-        console.log('Relationship:', magnitude.relationship);
 
         return {
             productivity: formatRiskMetric(magnitude.productivity),
@@ -97,7 +111,6 @@ const prepareSimulationData = (riskState: RiskState) => {
             competitive_advantage: formatRiskMetric(magnitude.competitive_advantage),
             fines: formatRiskMetric(magnitude.fines_and_judgements),
             reputation: formatRiskMetric(magnitude.reputation),
-            relationship: formatRiskMetric(magnitude.relationship || defaultRelationship)
         };
     };
 
