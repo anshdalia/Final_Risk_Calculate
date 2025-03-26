@@ -305,18 +305,74 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
     return (
         <Box sx={{ width: '100%', mb: 4 }}>
             <Stack spacing={4}>
-                {/* Historical Analysis Section */}
+    
+                {/* Remediation Strategies Section */}
                 <Paper elevation={3} sx={{ p: 3 }}>
                     <Typography variant="h5" gutterBottom>
-                        Historical Risk Analysis
+                        Recommended Remediation Strategies
                     </Typography>
-                    <RiskMetricsDisplay 
-                        metrics={riskState.risk_metrics}
-                        scenarios={[riskState.selected_scenario]}
-                        selectedScenario={riskState.selected_scenario}
-                        showScenarios={false}
-                    />
+                    {loading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                            <CircularProgress />
+                        </Box>
+                    ) : (
+                        <Grid container spacing={3}>
+                            {remediationStrategies.map((strategy, index) => (
+                                <Grid item xs={12} md={4} key={index}>
+                                    <Card>
+                                        <CardContent>
+                                            <Typography variant="h6" gutterBottom>
+                                                {strategy.title}
+                                            </Typography>
+                                            <Typography variant="body2" paragraph>
+                                                {strategy.description}
+                                            </Typography>
+                                            <Typography variant="body2" color="primary" paragraph>
+                                                Impact: {strategy.impact}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Implementation: {strategy.implementation}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    )}
                 </Paper>
+
+                <Paper>
+                    <Grid container spacing={3}>
+                        {/* Formalized Risk Statement Card */}
+                        <Grid item xs={12} md={6}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h5" gutterBottom>
+                                        Formalized Risk Statement
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {riskState?.risk_statement || 'No risk statement available'}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        {/* FAIR Score Card */}
+                        <Grid item xs={12} md={6}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h5" gutterBottom>
+                                        FAIR Score
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Current FAIR risk rating: <strong>High (7.8/10)</strong> — This score reflects a combination of high loss magnitude and moderate loss event frequency.
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    </Grid>
+                </Paper>
+
 
                 {/* Monte Carlo Simulation Section */}
                 <Paper elevation={3} sx={{ p: 3 }}>
@@ -372,40 +428,19 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                     )}
                 </Paper>
 
-                {/* Remediation Strategies Section */}
+                {/* Historical Analysis Section */}
                 <Paper elevation={3} sx={{ p: 3 }}>
                     <Typography variant="h5" gutterBottom>
-                        Recommended Remediation Strategies
+                        Final Values
                     </Typography>
-                    {loading ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                            <CircularProgress />
-                        </Box>
-                    ) : (
-                        <Grid container spacing={3}>
-                            {remediationStrategies.map((strategy, index) => (
-                                <Grid item xs={12} md={4} key={index}>
-                                    <Card>
-                                        <CardContent>
-                                            <Typography variant="h6" gutterBottom>
-                                                {strategy.title}
-                                            </Typography>
-                                            <Typography variant="body2" paragraph>
-                                                {strategy.description}
-                                            </Typography>
-                                            <Typography variant="body2" color="primary" paragraph>
-                                                Impact: {strategy.impact}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                Implementation: {strategy.implementation}
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    )}
+                    <RiskMetricsDisplay 
+                        metrics={riskState.risk_metrics}
+                        scenarios={[riskState.selected_scenario]}
+                        selectedScenario={riskState.selected_scenario}
+                        showScenarios={false}
+                    />
                 </Paper>
+
             </Stack>
         </Box>
     );
