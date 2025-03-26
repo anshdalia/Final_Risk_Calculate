@@ -91,6 +91,8 @@ export interface RiskState {
         }>;
     };
     remediation_suggestions: string[];
+    fair_score: number;
+    fair_score_explanation: string;
 }
 
 export interface InitialInputFormData {

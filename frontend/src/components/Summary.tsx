@@ -348,13 +348,13 @@ export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }
                 </Paper>
 
                 <Paper>
-                    <Grid container spacing={3}>
+                    <Grid container spacing={0} alignItems="stretch">
                         {/* Formalized Risk Statement Card */}
                         <Grid item xs={12} md={6}>
-                            <Card>
+                            <Card sx={{ height: '100%' }}>
                                 <CardContent>
                                     <Typography variant="h5" gutterBottom>
-                                        Formalized Risk Statement
+                                        Formalized Risk Statement (ISO 27001)
                                     </Typography>
 
                                     <Box sx={{ 
@@ -372,18 +372,76 @@ export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }
                             </Card>
                         </Grid>
 
-                        {/* FAIR Score Card */}
+
                         <Grid item xs={12} md={6}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h5" gutterBottom>
-                                        FAIR Score
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Current FAIR risk rating: <strong>High (7.8/10)</strong> — This score reflects a combination of high loss magnitude and moderate loss event frequency.
-                                    </Typography>
-                                </CardContent>
-                            </Card>
+                        <Card
+                            sx={{
+                            height: '100%',
+                            borderLeft: '6px solid',
+                            borderColor:
+                                riskState.fair_score >= 8
+                                ? 'error.main'
+                                : riskState.fair_score >= 5
+                                ? 'warning.main'
+                                : 'success.main',
+                            backgroundColor:
+                                riskState.fair_score >= 8
+                                ? '#fdecea'
+                                : riskState.fair_score >= 5
+                                ? '#fff8e1'
+                                : '#e8f5e9',
+                            }}
+                        >
+                            <CardContent>
+                            <Typography
+                                variant="h5"
+                                gutterBottom
+                                sx={{ fontWeight: 600, color: 'text.primary' }}
+                            >
+                                FAIR Score
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                <Typography
+                                variant="h4"
+                                sx={{
+                                    fontWeight: 700,
+                                    color:
+                                    riskState.fair_score >= 8
+                                        ? 'error.main'
+                                        : riskState.fair_score >= 5
+                                        ? 'warning.main'
+                                        : 'success.main',
+                                }}
+                                >
+                                {riskState.fair_score}/10
+                                </Typography>
+
+                                <Typography
+                                variant="h4"
+                                sx={{
+                                    fontWeight: 500,
+                                    color:
+                                    riskState.fair_score >= 8
+                                        ? 'error.main'
+                                        : riskState.fair_score >= 5
+                                        ? 'warning.main'
+                                        : 'success.main',
+                                }}
+                                >
+                                {riskState.fair_score >= 8
+                                    ? 'High Risk'
+                                    : riskState.fair_score >= 5
+                                    ? 'Moderate Risk'
+                                    : 'Low Risk'}
+                                </Typography>
+                            </Box>
+
+                            <Typography variant="body2">
+                                {riskState.fair_score_explanation}
+                            </Typography>
+                            </CardContent>
+                        </Card>
                         </Grid>
                     </Grid>
                 </Paper>

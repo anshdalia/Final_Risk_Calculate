@@ -396,6 +396,13 @@ class RiskProcessor:
             Provide a detailed explanation of how the industry data influenced your assessment.
             Do not change the risk statement.
 
+            Additionally, calculate a FAIR Score (0-10) based on:
+            - The selected scenario's details
+            - The initial input of risk revenue, employees, industry, location, and additional factors
+            - Current risk metrics and their confidence levels
+            - Industry analysis insights
+            - Answers to dynamic questions
+
             Format response as JSON with:
             {{
                 "risk_statement": "string",
@@ -424,7 +431,9 @@ class RiskProcessor:
                         "reputation": {{ "min": float, "likely": float, "max": float, "confidence": float }}
                     }}
                 }},
-                "explanation": "string"
+                "explanation": "string",
+                "fair_score": float,  // Score from 0-10
+                "fair_score_explanation": "string"  // Brief explanation of how the score was determined
             }}
             """
             
@@ -443,6 +452,12 @@ class RiskProcessor:
             # Apply the new metrics and update state
             new_metrics = metrics_analysis['risk_metrics']
             self.state.update_risk_metrics(**new_metrics)
+            
+            # Store the FAIR score
+            self.state.set_fair_score(
+                metrics_analysis['fair_score'],
+                metrics_analysis['fair_score_explanation']
+            )
             
             # Log the changes
             logger.info("=== Industry Analysis Risk Metric Updates ===")

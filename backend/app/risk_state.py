@@ -37,6 +37,10 @@ class RiskState:
             }
         }
         
+        # Initialize FAIR Score
+        self.fair_score = 0.0
+        self.fair_score_explanation = ""
+        
         # User inputs
         self.user_inputs = {
             "revenue": 0,
@@ -148,6 +152,13 @@ class RiskState:
         logger.info(f"Risk statement set to: {statement}")
         logger.info(f"Current state risk statement: {self.get_current_state()['risk_statement']}")
     
+    def set_fair_score(self, score: float, explanation: str):
+        """Set the FAIR Score"""
+        logger.info("Setting FAIR Score")
+        self.fair_score = score
+        self.fair_score_explanation = explanation
+        logger.info(f"FAIR Score set to: {score}")
+    
     def get_current_state(self) -> Dict:
         """Get complete current state"""
         return {
@@ -159,5 +170,7 @@ class RiskState:
             "dynamic_questions": self.dynamic_questions,
             "question_answers": self.question_answers,
             "industry_analysis": self.industry_analysis,
-            "remediation_suggestions": self.remediation_suggestions
+            "remediation_suggestions": self.remediation_suggestions,
+            "fair_score": self.fair_score,
+            "fair_score_explanation": self.fair_score_explanation
         } 
