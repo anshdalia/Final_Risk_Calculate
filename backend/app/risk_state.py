@@ -145,11 +145,13 @@ class RiskState:
         """Set the risk statement"""
         logger.info("Setting risk statement")
         self.risk_statement = statement
-        logger.debug(f"Risk statement set: {statement}")
+        logger.info(f"Risk statement set to: {statement}")
+        logger.info(f"Current state risk statement: {self.get_current_state()['risk_statement']}")
     
     def get_current_state(self) -> Dict:
         """Get complete current state"""
         return {
+            "risk_statement": self.risk_statement,
             "risk_metrics": self.risk_metrics,
             "user_inputs": self.user_inputs,
             "scenarios": self.scenarios,

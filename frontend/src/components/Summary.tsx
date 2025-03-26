@@ -5,6 +5,8 @@ import { RiskMetrics, RiskMetric, RiskState, LossMagnitude, PrimaryLossEventFreq
 
 interface SummaryProps {
     riskState: RiskState;
+    onBack: () => void;
+    onRestart: () => void;
 }
 
 interface RemediationStrategy {
@@ -68,7 +70,7 @@ const formatCurrency = (value: number): string => {
     }).format(value);
 };
 
-export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
+export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }) => {
     const [loading, setLoading] = useState(false);
     const [remediationStrategies, setRemediationStrategies] = useState<RemediationStrategy[]>([]);
     const [simulationResults, setSimulationResults] = useState<SimulationResults | null>(null);
@@ -302,6 +304,10 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
         confidence: metric.confidence
     });
 
+    // Add logging to check risk state and statement
+    console.log('Risk State in Summary:', riskState);
+    console.log('Risk Statement:', riskState?.risk_statement);
+
     return (
         <Box sx={{ width: '100%', mb: 4 }}>
             <Stack spacing={4}>
@@ -350,9 +356,18 @@ export const Summary: React.FC<SummaryProps> = ({ riskState }) => {
                                     <Typography variant="h5" gutterBottom>
                                         Formalized Risk Statement
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {riskState?.risk_statement || 'No risk statement available'}
-                                    </Typography>
+
+                                    <Box sx={{ 
+                                        p: 2, 
+                                        borderLeft: '4px solid', 
+                                        borderColor: 'primary.main', 
+                                        backgroundColor: '#f9f9f9',
+                                        fontWeight: 'bold',
+                                        }}>
+                                        <Typography variant="body2">
+                                            {riskState?.risk_statement || 'No risk statement available'}
+                                        </Typography>
+                                    </Box>
                                 </CardContent>
                             </Card>
                         </Grid>

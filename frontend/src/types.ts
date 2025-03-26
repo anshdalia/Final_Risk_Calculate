@@ -41,6 +41,7 @@ export interface Scenario {
 }
 
 export interface RiskState {
+    risk_statement: string;
     risk_metrics: RiskMetrics;
     user_inputs: {
         revenue: number;
@@ -74,6 +75,18 @@ export interface RiskState {
         regional_cyber_crimes?: Array<{
             crime_type: string;
             statistics: string;
+            year: number;
+        }>;
+    };
+    historical_analysis: {
+        past_incidents: Array<{
+            date: string;
+            description: string;
+            impact: string;
+        }>;
+        trends: Array<{
+            metric: string;
+            value: number;
             year: number;
         }>;
     };
