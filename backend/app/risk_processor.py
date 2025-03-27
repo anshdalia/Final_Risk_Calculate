@@ -392,6 +392,16 @@ class RiskProcessor:
             Current Risk Metrics:
             {json.dumps(current_metrics, indent=2)}
 
+            
+            Formalized Risk Statement:
+            {self.state.risk_statement}
+
+            Selected High-Risk Scenario:
+            "{self.state.selected_scenario['description']}" - Impact: {self.state.selected_scenario['potential_impact']}
+
+            Additional Risk Factors:
+            {', '.join(self.state.user_inputs['additional_factors'] or [])}
+
             Analyze these industry insights and determine appropriate values for all risk metrics.
             Provide a detailed explanation of how the industry data influenced your assessment.
             Do not change the risk statement.
@@ -402,6 +412,11 @@ class RiskProcessor:
             - Current risk metrics and their confidence levels
             - Industry analysis insights
             - Answers to dynamic questions
+
+            Generate exactly 3 specific and unique remediation strategies. These must be directly informed by:
+            1. The formalized risk statement,
+            2. The selected HIGH risk scenario,
+            3. The additional risk factors provided by the user.
 
             Format response as JSON with:
             {{
@@ -441,10 +456,12 @@ class RiskProcessor:
                         "impact": "string",
                         "implementation": "string"
                     }}
-                ]  // Exactly 3 specific and unique remediation strategies based on company profile, risk metrics, and industry analysis
+                ] 
             }}
             """
             
+            #// Exactly 3 specific and unique remediation strategies based on company profile, risk metrics, and industry analysis
+
             # Get metric adjustments based on insights
             metrics_response = self.gpt4_mini.generate(metrics_prompt)
             metrics_analysis = json.loads(metrics_response)
