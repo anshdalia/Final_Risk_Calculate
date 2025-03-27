@@ -2,63 +2,64 @@ import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
+from scipy.stats import beta, poisson
 
-"""
-# Previous implementation - commented out for reference
-class Calculator:
-    def __init__(self, tef_min, tef_likely, tef_max, 
-                 vuln_min, vuln_likely, vuln_max,
-                 plm_min, plm_likely, plm_max,
-                 slef_min, slef_likely, slef_max,
-                 slm_min, slm_likely, slm_max):
-        self.tef = (tef_min, tef_likely, tef_max)
-        self.vuln = (vuln_min, vuln_likely, vuln_max)
-        self.plm = (plm_min, plm_likely, plm_max)
-        self.slef = (slef_min, slef_likely, slef_max)
-        self.slm = (slm_min, slm_likely, slm_max)
+# """
+# # Previous implementation - commented out for reference
+# class Calculator:
+#     def __init__(self, tef_min, tef_likely, tef_max, 
+#                  vuln_min, vuln_likely, vuln_max,
+#                  plm_min, plm_likely, plm_max,
+#                  slef_min, slef_likely, slef_max,
+#                  slm_min, slm_likely, slm_max):
+#         self.tef = (tef_min, tef_likely, tef_max)
+#         self.vuln = (vuln_min, vuln_likely, vuln_max)
+#         self.plm = (plm_min, plm_likely, plm_max)
+#         self.slef = (slef_min, slef_likely, slef_max)
+#         self.slm = (slm_min, slm_likely, slm_max)
         
-    def pert(self, low, likely, high, confidence=4.0):
-        # Handle edge cases
-        if high <= low or abs(high - low) < 1e-10:
-            return likely
+#     def pert(self, low, likely, high, confidence=4.0):
+#         # Handle edge cases
+#         if high <= low or abs(high - low) < 1e-10:
+#             return likely
             
-        mean = (low + confidence * likely + high) / (confidence + 2)
-        variance = ((high - low) ** 2) / 36
+#         mean = (low + confidence * likely + high) / (confidence + 2)
+#         variance = ((high - low) ** 2) / 36
         
-        # Handle edge cases to prevent division by zero
-        if abs(likely - mean) < 1e-10:
-            likely += 1e-10
+#         # Handle edge cases to prevent division by zero
+#         if abs(likely - mean) < 1e-10:
+#             likely += 1e-10
         
-        try:
-            alpha = ((mean - low) * (2 * likely - low - high)) / ((high - low) * (likely - mean))
-            if alpha <= 0:  # Invalid alpha value
-                return likely
+#         try:
+#             alpha = ((mean - low) * (2 * likely - low - high)) / ((high - low) * (likely - mean))
+#             if alpha <= 0:  # Invalid alpha value
+#                 return likely
                 
-            beta = alpha * (high - mean) / (mean - low)
-            if beta <= 0:  # Invalid beta value
-                return likely
+#             beta = alpha * (high - mean) / (mean - low)
+#             if beta <= 0:  # Invalid beta value
+#                 return likely
                 
-            return np.random.beta(alpha, beta) * (high - low) + low
-        except:
-            # If any calculation fails, return the likely value
-            return likely
+#             return np.random.beta(alpha, beta) * (high - low) + low
+#         except:
+#             # If any calculation fails, return the likely value
+#             return likely
     
-    def run_simulation(self, iterations=1000000):
-        results = []
-        for _ in range(iterations):
-            tef = self.pert(*self.tef)
-            vuln = self.pert(*self.vuln)
-            plm = self.pert(*self.plm)
-            slef = self.pert(*self.slef)
-            slm = self.pert(*self.slm)
+#     def run_simulation(self, iterations=1000000):
+#         results = []
+#         for _ in range(iterations):
+#             tef = self.pert(*self.tef)
+#             vuln = self.pert(*self.vuln)
+#             plm = self.pert(*self.plm)
+#             slef = self.pert(*self.slef)
+#             slm = self.pert(*self.slm)
             
-            primary_loss = tef * vuln * plm
-            secondary_loss = primary_loss * slef * slm
-            total_loss = primary_loss + secondary_loss
-            results.append(total_loss)
+#             primary_loss = tef * vuln * plm
+#             secondary_loss = primary_loss * slef * slm
+#             total_loss = primary_loss + secondary_loss
+#             results.append(total_loss)
             
-        return np.array(results)
-"""
+#         return np.array(results)
+# """
 
 # class Calculator:
 #     def __init__(self, tef, vuln, plm_components, slef, slm_components):
@@ -160,9 +161,6 @@ class Calculator:
         
 #         return total_losses
     
-import numpy as np
-from scipy.stats import beta, poisson
-
 class Calculator:
     def __init__(self, tef, vuln, plm_components, slef, slm_components):
         """
@@ -186,7 +184,7 @@ class Calculator:
         self.tef = tef
         self.vuln = vuln
         self.plm_components = plm_components
-        self.slef = slef
+        self.slef = slef  # Keep full SLEF tuple for Beta-PERT
         self.slm_components = slm_components
 
     def map_confidence_to_lambda(self, confidence):
@@ -234,31 +232,43 @@ class Calculator:
 
     def run_simulation(self, iterations=1000000):
         """
-        Run Monte Carlo simulation with Poisson-discrete LEF and Bernoulli secondary loss logic
-
-        Returns:
-            np.array: Array of total loss values
+        Run Monte Carlo simulation with Poisson-discrete LEF and Beta-PERT + Bernoulli secondary loss logic
         """
+        print("\n=== Starting Simulation ===")
+        
         # Generate TEF and Vulnerability arrays
         tef_array = self.pert(*self.tef, iterations)
         vuln_array = self.pert(*self.vuln, iterations)
+        
+        print(f"Generated TEF values: min={tef_array.min():.3f}, max={tef_array.max():.3f}")
+        print(f"Generated VULN values: min={vuln_array.min():.3f}, max={vuln_array.max():.3f}")
 
         # Calculate LEF as Poisson(TEF × VULN)
         lambda_array = tef_array * vuln_array
         lef_array = poisson.rvs(mu=lambda_array)
+        print(f"Generated LEF values: min={lef_array.min()}, max={lef_array.max()}")
 
         # Calculate PLEM and SLEM
         plm_array = self.calculate_plem(iterations)
         slm_array = self.calculate_slem(iterations)
+        print(f"Generated PLEM values: min=${plm_array.min():,.2f}, max=${plm_array.max():,.2f}")
+        print(f"Generated SLEM values: min=${slm_array.min():,.2f}, max=${slm_array.max():,.2f}")
 
-        # Generate SLEF probability array and apply Bernoulli process
-        slef_array = self.pert(*self.slef, iterations)
-        slef_trigger = np.random.rand(iterations) < slef_array
+        # Generate SLEF probabilities using Beta-PERT
+        slef_probabilities = self.pert(*self.slef, iterations)
+        print(f"Generated SLEF probabilities: min={slef_probabilities.min():.3f}, max={slef_probabilities.max():.3f}")
+        
+        # Generate Bernoulli trials using varying SLEF probabilities
+        secondary_events = np.random.rand(iterations) < slef_probabilities
+        print(f"Secondary events occurred in {np.mean(secondary_events)*100:.1f}% of cases")
 
         # Calculate losses
         primary_losses = lef_array * plm_array
-        secondary_losses = lef_array * slef_trigger * slm_array
+        secondary_losses = lef_array * secondary_events * slm_array
         total_losses = primary_losses + secondary_losses
+
+        print(f"Final loss values: min=${total_losses.min():,.2f}, max=${total_losses.max():,.2f}")
+        print("=== Simulation Complete ===\n")
 
         return total_losses
 
