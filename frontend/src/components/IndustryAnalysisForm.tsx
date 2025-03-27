@@ -180,9 +180,10 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                             icon={false}
                             sx={{ 
                                 mb: 2,
-                                backgroundColor: '#f5f5f5',  // Light gray background
-                                color: '#424242',  // Dark gray text
-                                border: '1px solid #e0e0e0', // Light gray border
+                                backgroundColor: '#eeeeee',             // Light gray background
+                                color: '#424242',                       // Neutral dark gray text
+                                border: '1px solid #bdbdbd',            // Medium gray border
+                                fontSize: '1rem',                       // Slightly larger text
                                 '& .MuiAlert-message': { p: 0 }
                             }}
                         >
@@ -226,6 +227,24 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
                                 Industry Analysis Details
                             </Typography>
                         </Box>
+
+                        <Alert 
+                            severity="info" 
+                            icon={false}
+                            sx={{ 
+                                mb: 2,
+                                backgroundColor: '#eeeeee',             // Light gray background
+                                color: '#424242',                       // Neutral dark gray text
+                                border: '1px solid #bdbdbd',            // Medium gray border
+                                fontSize: '1rem',                       // Slightly larger text
+                                '& .MuiAlert-message': { p: 0 }
+                            }}
+                        >
+                            Click <strong>Process Industry Analysis</strong> to populate the fields below. This data helps inform your risk assessment by contextualizing your organization's exposure within industry trends.<br /> <br /> After reviewing the information, click the <strong>Continue to Summary</strong> button to move forward.
+
+                        </Alert>
+
+
                         <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
                             {renderAnalysisDetails()}
                         </Box>

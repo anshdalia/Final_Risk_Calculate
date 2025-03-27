@@ -134,9 +134,10 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
                             icon={false}
                             sx={{ 
                                 mb: 2,
-                                backgroundColor: '#f5f5f5',  // Light gray background
-                                color: '#424242',  // Dark gray text
-                                border: '1px solid #e0e0e0', // Light gray border
+                                backgroundColor: '#eeeeee',             // Light gray background
+                                color: '#424242',                       // Neutral dark gray text
+                                border: '1px solid #bdbdbd',            // Medium gray border
+                                fontSize: '1rem',                       // Slightly larger text
                                 '& .MuiAlert-message': { p: 0 }
                             }}
                         >

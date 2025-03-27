@@ -301,6 +301,7 @@ class Calculator:
         total_losses = primary_losses + secondary_losses
 
         print(f"Final loss values: min=${total_losses.min():,.2f}, max=${total_losses.max():,.2f}")
+        print("First 20 ALE values:", total_losses[:20])
         print("=== Simulation Complete ===\n")
 
         return total_losses
@@ -343,7 +344,11 @@ class OutputGenerator:
             value = np.percentile(self.results, p)
             plt.axvline(x=value, color=c, linestyle='--', 
                        label=f'{p}th percentile: ${value:,.2f}')
-        
+            
+        # 5. Add ALE (Average Loss) Line
+        ale = np.mean(self.results)
+        plt.axvline(x=ale, color='blue', linestyle=':', linewidth=2, label=f'ALE (mean): ${ale:,.2f}')
+            
         plt.title('Risk Distribution (Monte Carlo Simulation)')
         plt.xlabel('Annual Loss Exposure ($)')
         plt.ylabel('Probability Density')
