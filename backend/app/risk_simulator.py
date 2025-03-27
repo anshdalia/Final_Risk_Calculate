@@ -323,8 +323,8 @@ class OutputGenerator:
         x_range = np.linspace(min(self.results), max(self.results), 100)
         plt.plot(x_range, spline(x_range), color='blue', alpha=0.7, linewidth=2, label='Density Curve')
         
-        # 3. Rare Events using QuickSelect (top 100k points)
-        k = len(self.results) - 100000  # Find the value at this index
+        # 3. Rare Events using QuickSelect (top 10k points)
+        k = len(self.results) - 10000  # Find the value at this index
         threshold = np.partition(self.results, k)[k]
         rare_events = self.results[self.results > threshold]
         
@@ -334,7 +334,7 @@ class OutputGenerator:
                        color='red',
                        alpha=0.6,
                        s=50,  # Size of dots
-                       label=f'Rare Events (Top 100k values)')
+                       label=f'Rare Events (Top 10k values)')
         
         # Add percentile lines
         percentiles = [10, 50, 90]
