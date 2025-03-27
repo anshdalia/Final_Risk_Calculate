@@ -3,6 +3,8 @@ import { Box, Grid, Paper, Stack, Typography, Table, TableBody, TableCell, Table
 import { RiskMetricsDisplay } from './RiskMetricsDisplay';
 import { RiskMetrics, RiskMetric, RiskState, LossMagnitude, PrimaryLossEventFrequency, SecondaryLossEventFrequency } from '../types';
 
+
+
 interface SummaryProps {
     riskState: RiskState;
     onBack: () => void;
