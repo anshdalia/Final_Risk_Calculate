@@ -35,6 +35,12 @@ class RiskProcessor:
 
         First, provide a formalized risk statement following ISO 27001 format that captures the key risk factors in a clear and concise manner.
 
+        Generate 3 risk scenarios:
+        - One HIGH severity, one MEDIUM, and one LOW
+        - Each should be based *directly on the additional risk factors* provided above
+        - Ensure the scenarios are realistic, relevant to the industry and company profile, and grounded in the risk statement
+
+        
         Then provide comprehensive initial risk estimates for ALL metrics, considering the company profile.
         Generate 6 specific, targeted questions that would help refine these estimates. The questions should be:
         1. Based on the company's industry, size, location, and additional factors
