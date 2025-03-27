@@ -204,15 +204,46 @@ class Calculator:
         Returns:
             np.array: Random values from the PERT distribution
         """
+        # Input Validation
+        if low > high:
+            raise ValueError("Low value cannot be greater than high value")
+        if likely < low or likely > high:
+            raise ValueError("Likely value must be between low and high")
+        if confidence < 0:
+            raise ValueError("Confidence must be non-negative")
+
+        # Handle Edge Cases
+        if abs(high - low) < 1e-10:  # If range is too small
+            print(f"Warning: Range too small ({high - low:.2e}) for PERT distribution. Using likely value.")
+            return np.full(size, likely)
+        
+        # Calculate Mean with Safety Check
         lam = self.map_confidence_to_lambda(confidence)
         mean = (low + lam * likely + high) / (lam + 2)
-        if likely == mean or low == high:
+        
+        # Handle Mean Edge Cases
+        if abs(mean - likely) < 1e-10:
             alpha = beta_param = lam
         else:
+            # Calculate Alpha with Safety Check
             alpha = ((mean - low) * (2 * likely - low - high)) / ((likely - mean) * (high - low))
+            if alpha <= 0:
+                print(f"Warning: Invalid alpha parameter ({alpha:.2e}). Using default shape parameter.")
+                alpha = lam
+            
+            # Calculate Beta with Safety Check
             beta_param = alpha * (high - mean) / (mean - low)
-        samples = beta.rvs(a=alpha, b=beta_param, size=size) * (high - low) + low
-        return samples
+            if beta_param <= 0:
+                print(f"Warning: Invalid beta parameter ({beta_param:.2e}). Using default shape parameter.")
+                beta_param = lam
+
+        # Generate Samples with Error Handling
+        try:
+            samples = beta.rvs(a=alpha, b=beta_param, size=size) * (high - low) + low
+            return samples
+        except Exception as e:
+            print(f"Warning: Error in Beta distribution generation: {e}")
+            return np.full(size, likely)  # Fallback to likely value
 
     def calculate_plem(self, iterations=1000000):
         """Calculate Primary Loss Event Magnitude from components"""
