@@ -4,6 +4,7 @@ from io import BytesIO
 import base64
 from scipy.stats import beta, poisson
 from scipy.stats import gaussian_kde
+from scipy.interpolate import UnivariateSpline
 
 # """
 # # Previous implementation - commented out for reference
@@ -315,26 +316,25 @@ class OutputGenerator:
         # 1. Main Histogram (semi-transparent)
         plt.hist(self.results, bins=50, density=True, alpha=0.3, color='skyblue', label='Distribution')
         
-        # 2. KDE Curve
-        kde = gaussian_kde(self.results)
+        # 2. Spline Interpolation for smooth curve
+        hist, bins = np.histogram(self.results, bins=50, density=True)
+        bin_centers = (bins[:-1] + bins[1:]) / 2
+        spline = UnivariateSpline(bin_centers, hist, k=3, s=0)
         x_range = np.linspace(min(self.results), max(self.results), 100)
-        density = kde(x_range)
-        plt.plot(x_range, density, color='blue', alpha=0.7, linewidth=2, label='Density Curve')
+        plt.plot(x_range, spline(x_range), color='blue', alpha=0.7, linewidth=2, label='Density Curve')
         
-        # 3. Rare Events as Dots
-        # Find values that occur only once
-        p95 = np.percentile(self.results, 95)
-        rare_events = self.results[self.results > p95]
-    
+        # 3. Rare Events using QuickSelect (top 100k points)
+        k = len(self.results) - 100000  # Find the value at this index
+        threshold = np.partition(self.results, k)[k]
+        rare_events = self.results[self.results > threshold]
         
-        # Plot rare events as dots
         if len(rare_events) > 0:
             plt.scatter(rare_events, 
-                    kde(rare_events),  # Use KDE height for y-coordinate
-                    color='red',
-                    alpha=0.6,
-                    s=50,  # Size of dots
-                    label='Rare Events')
+                       spline(rare_events),  # Use spline height for y-coordinate
+                       color='red',
+                       alpha=0.6,
+                       s=50,  # Size of dots
+                       label=f'Rare Events (Top 100k values)')
         
         # Add percentile lines
         percentiles = [10, 50, 90]
@@ -342,7 +342,7 @@ class OutputGenerator:
         for p, c in zip(percentiles, colors):
             value = np.percentile(self.results, p)
             plt.axvline(x=value, color=c, linestyle='--', 
-                    label=f'{p}th percentile: ${value:,.2f}')
+                       label=f'{p}th percentile: ${value:,.2f}')
         
         plt.title('Risk Distribution (Monte Carlo Simulation)')
         plt.xlabel('Annual Loss Exposure ($)')
