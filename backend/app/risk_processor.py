@@ -401,7 +401,7 @@ class RiskProcessor:
             
             Formalized Risk Statement:
             {self.state.risk_statement}
-
+ 
             Selected High-Risk Scenario:
             "{self.state.selected_scenario['description']}" - Impact: {self.state.selected_scenario['potential_impact']}
 

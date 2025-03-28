@@ -27,7 +27,7 @@ class GPT4MiniClient:
         
         try:
             payload = {
-                "model": "gpt-4o-mini",  # Using GPT-4o-mini model
+                "model": "gpt-4o",  # Using GPT-4o-mini model
                 "messages": [
                     {"role": "system", "content": "You are a cybersecurity risk analyst expert following ISO 27001 and FAIR methodology. You provide responses in JSON format."},
                     {"role": "user", "content": prompt}

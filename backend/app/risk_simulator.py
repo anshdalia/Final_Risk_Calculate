@@ -5,6 +5,8 @@ import base64
 from scipy.stats import beta, poisson
 from scipy.stats import gaussian_kde
 from scipy.interpolate import UnivariateSpline
+import matplotlib.ticker as mtick
+
 
 # """
 # # Previous implementation - commented out for reference
@@ -278,7 +280,8 @@ class Calculator:
 
         # Calculate LEF as Poisson(TEF × VULN)
         lambda_array = tef_array * vuln_array
-        lef_array = poisson.rvs(mu=lambda_array)
+        #lef_array = poisson.rvs(mu=lambda_array)
+        lef_array = lambda_array
         print(f"Generated LEF values: min={lef_array.min()}, max={lef_array.max()}")
 
         # Calculate PLEM and SLEM
@@ -312,63 +315,121 @@ class OutputGenerator:
         self.results = results
         
     def generate_histogram(self):
-        plt.figure(figsize=(10, 6))
         
-        # 1. Main Histogram (semi-transparent)
-        plt.hist(self.results, bins=50, density=True, alpha=0.3, color='skyblue', label='Distribution')
         
-        # 2. Spline Interpolation for smooth curve
-        hist, bins = np.histogram(self.results, bins=50, density=True)
-        bin_centers = (bins[:-1] + bins[1:]) / 2
-        spline = UnivariateSpline(bin_centers, hist, k=3, s=0)
-        x_range = np.linspace(min(self.results), max(self.results), 100)
-        plt.plot(x_range, spline(x_range), color='blue', alpha=0.7, linewidth=2, label='Density Curve')
         
-        # 3. Rare Events using QuickSelect (top 10k points)
-        k = len(self.results) - 10000  # Find the value at this index
-        threshold = np.partition(self.results, k)[k]
-        rare_events = self.results[self.results > threshold]
+        #SHOWS LOSS EXCEEDANCE CURVE IN BLUE, NO DRAG
+        # plt.figure(figsize=(10, 6))
+
+        # # Sort and calculate exceedance probabilities (as %)
+        # sorted_losses = np.sort(self.results)
+        # exceedance_probs = 1.0 - np.arange(0, len(sorted_losses)) / len(sorted_losses)
+
+        # # Plot LEC
+        # plt.plot(sorted_losses, exceedance_probs, color='blue', linewidth=2, label='Loss Exceedance Curve')
+
+        # # Highlight 10th, 50th, 90th percentiles
+        # percentiles = {
+        #     10: np.percentile(self.results, 10),
+        #     50: np.percentile(self.results, 50),
+        #     90: np.percentile(self.results, 90)
+        # }
+
+        # for p, value in percentiles.items():
+        #     prob = 1 - p / 100.0
+        #     plt.axvline(x=value, linestyle='--', color='gray', alpha=0.6)
+        #     plt.text(value, prob, f"${value:,.0f}", verticalalignment='bottom',
+        #             horizontalalignment='right', fontsize=9)
+
+        # # Format Y-axis as percentage (0% to 100%) — not log scale
+        # plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.0, decimals=0))
+        # plt.ylim(0, 1)
+
+        # # Format X-axis in raw dollars (no scientific notation)
+        # plt.gca().xaxis.set_major_formatter(mtick.StrMethodFormatter('${x:,.0f}'))
+
+        # # Axis labels and titles
+        # plt.ylabel("Simulated Probability of Exceeding Loss")
+        # plt.xlabel("Annual Loss Exposure ($)")
+        # plt.title("Loss Exceedance Curve (LEC)")
+        # plt.grid(True, alpha=0.3)
+        # plt.legend()
+
+        # # Export plot to base64
+        # buffer = BytesIO()
+        # plt.savefig(buffer, format='png', bbox_inches='tight')
+        # buffer.seek(0)
+        # image_png = buffer.getvalue()
+        # buffer.close()
+        # plt.close()
+
+        # graph = base64.b64encode(image_png).decode('utf-8')
+        # return {
+        #     'graph': graph,
+        #     'percentiles': {f'p{p}': float(value) for p, value in percentiles.items()}
+        # }
+
+
+
+
+        # SHOWS HISTOGRAM OF VALUES
+        # plt.figure(figsize=(10, 6))
         
-        if len(rare_events) > 0:
-            plt.scatter(rare_events, 
-                       spline(rare_events),  # Use spline height for y-coordinate
-                       color='red',
-                       alpha=0.6,
-                       s=50,  # Size of dots
-                       label=f'Rare Events (Top 10k values)')
+        # # 1. Main Histogram (semi-transparent)
+        # plt.hist(self.results, bins=50, density=True, alpha=0.3, color='skyblue', label='Distribution')
         
-        # Add percentile lines
-        percentiles = [10, 50, 90]
-        colors = ['green', 'red', 'orange']
-        for p, c in zip(percentiles, colors):
-            value = np.percentile(self.results, p)
-            plt.axvline(x=value, color=c, linestyle='--', 
-                       label=f'{p}th percentile: ${value:,.2f}')
+        # # 2. Spline Interpolation for smooth curve
+        # hist, bins = np.histogram(self.results, bins=50, density=True)
+        # bin_centers = (bins[:-1] + bins[1:]) / 2
+        # spline = UnivariateSpline(bin_centers, hist, k=3, s=0)
+        # x_range = np.linspace(min(self.results), max(self.results), 100)
+        # plt.plot(x_range, spline(x_range), color='blue', alpha=0.7, linewidth=2, label='Density Curve')
+        
+        # # 3. Rare Events using QuickSelect (top 10k points)
+        # k = len(self.results) - 10000  # Find the value at this index
+        # threshold = np.partition(self.results, k)[k]
+        # rare_events = self.results[self.results > threshold]
+        
+        # if len(rare_events) > 0:
+        #     plt.scatter(rare_events, 
+        #                spline(rare_events),  # Use spline height for y-coordinate
+        #                color='red',
+        #                alpha=0.6,
+        #                s=50,  # Size of dots
+        #                label=f'Rare Events (Top 10k values)')
+        
+        # # Add percentile lines
+        # percentiles = [10, 50, 90]
+        # colors = ['green', 'red', 'orange']
+        # for p, c in zip(percentiles, colors):
+        #     value = np.percentile(self.results, p)
+        #     plt.axvline(x=value, color=c, linestyle='--', 
+        #                label=f'{p}th percentile: ${value:,.2f}')
             
-        # 5. Add ALE (Average Loss) Line
-        ale = np.mean(self.results)
-        plt.axvline(x=ale, color='blue', linestyle=':', linewidth=2, label=f'ALE (mean): ${ale:,.2f}')
+        # # 5. Add ALE (Average Loss) Line
+        # ale = np.mean(self.results)
+        # plt.axvline(x=ale, color='blue', linestyle=':', linewidth=2, label=f'ALE (mean): ${ale:,.2f}')
             
-        plt.title('Risk Distribution (Monte Carlo Simulation)')
-        plt.xlabel('Annual Loss Exposure ($)')
-        plt.ylabel('Probability Density')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
+        # plt.title('Risk Distribution (Monte Carlo Simulation)')
+        # plt.xlabel('Annual Loss Exposure ($)')
+        # plt.ylabel('Probability Density')
+        # plt.legend()
+        # plt.grid(True, alpha=0.3)
         
-        # Convert plot to base64 string
-        buffer = BytesIO()
-        plt.savefig(buffer, format='png', bbox_inches='tight')
-        buffer.seek(0)
-        image_png = buffer.getvalue()
-        buffer.close()
-        plt.close()
+        # # Convert plot to base64 string
+        # buffer = BytesIO()
+        # plt.savefig(buffer, format='png', bbox_inches='tight')
+        # buffer.seek(0)
+        # image_png = buffer.getvalue()
+        # buffer.close()
+        # plt.close()
         
-        graph = base64.b64encode(image_png).decode('utf-8')
-        return {
-            'graph': graph,
-            'percentiles': {
-                'p10': float(np.percentile(self.results, 10)),
-                'p50': float(np.percentile(self.results, 50)),
-                'p90': float(np.percentile(self.results, 90))
-            }
-        }
+        # graph = base64.b64encode(image_png).decode('utf-8')
+        # return {
+        #     'graph': graph,
+        #     'percentiles': {
+        #         'p10': float(np.percentile(self.results, 10)),
+        #         'p50': float(np.percentile(self.results, 50)),
+        #         'p90': float(np.percentile(self.results, 90))
+        #     }
+        # }

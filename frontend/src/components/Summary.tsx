@@ -465,25 +465,30 @@ export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        <TableRow>
-                                            <TableCell>10th Percentile (Optimistic)</TableCell>
-                                            <TableCell align="right">{formatCurrency(simulationResults.percentiles.p10)}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>50th Percentile (Median)</TableCell>
-                                            <TableCell align="right">{formatCurrency(simulationResults.percentiles.p50)}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>90th Percentile (Conservative)</TableCell>
-                                            <TableCell align="right">{formatCurrency(simulationResults.percentiles.p90)}</TableCell>
-                                        </TableRow>
+                                    <TableRow>
+                                        <TableCell>
+                                            <b>Significant loss level:</b> 90% probability that losses will reach or exceed this value (10th Percentile)
+                                        </TableCell>
+                                        <TableCell align="right">{formatCurrency(simulationResults.percentiles.p10)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>
+                                            <b>Expected loss level:</b> 50% probability that losses will reach or exceed this value (50th Percentile)
+                                        </TableCell>
+                                        <TableCell align="right">{formatCurrency(simulationResults.percentiles.p50)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>
+                                            <b>Minimal loss level:</b> 10% probability that losses will reach or exceed this value (90th Percentile)
+                                        </TableCell>
+                                        <TableCell align="right">{formatCurrency(simulationResults.percentiles.p90)}</TableCell>
+                                    </TableRow>
                                     </TableBody>
                                 </Table>
                             </TableContainer>
 
                             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                                This simulation runs thousands of scenarios to estimate potential annual losses based on the provided risk metrics. 
-                                The 50th percentile represents the median expected loss, while the 10th and 90th percentiles show optimistic and conservative estimates respectively.
+                                This simulation estimates potential annual losses, showing the likelihood of losses exceeding different dollar amounts based on your provided risk metrics.
                             </Typography>
                         </Stack>
                     ) : (
