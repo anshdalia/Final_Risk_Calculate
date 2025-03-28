@@ -316,58 +316,60 @@ class OutputGenerator:
         
     def generate_histogram(self):
         
-        
-        
         #SHOWS LOSS EXCEEDANCE CURVE IN BLUE, NO DRAG
-        # plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(10, 6))
 
-        # # Sort and calculate exceedance probabilities (as %)
-        # sorted_losses = np.sort(self.results)
-        # exceedance_probs = 1.0 - np.arange(0, len(sorted_losses)) / len(sorted_losses)
+        # Sort and calculate exceedance probabilities (as %)
+        sorted_losses = np.sort(self.results)
+        exceedance_probs = 1.0 - np.arange(0, len(sorted_losses)) / len(sorted_losses)
 
-        # # Plot LEC
-        # plt.plot(sorted_losses, exceedance_probs, color='blue', linewidth=2, label='Loss Exceedance Curve')
+        # Plot LEC
+        plt.plot(sorted_losses, exceedance_probs, color='blue', linewidth=2, label='Loss Exceedance Curve')
 
-        # # Highlight 10th, 50th, 90th percentiles
-        # percentiles = {
-        #     10: np.percentile(self.results, 10),
-        #     50: np.percentile(self.results, 50),
-        #     90: np.percentile(self.results, 90)
-        # }
+        # Highlight 10th, 50th, 90th percentiles
+        percentiles = {
+            10: np.percentile(self.results, 10),
+            50: np.percentile(self.results, 50),
+            90: np.percentile(self.results, 90)
+        }
 
-        # for p, value in percentiles.items():
-        #     prob = 1 - p / 100.0
-        #     plt.axvline(x=value, linestyle='--', color='gray', alpha=0.6)
-        #     plt.text(value, prob, f"${value:,.0f}", verticalalignment='bottom',
-        #             horizontalalignment='right', fontsize=9)
+        offset_x = 0.05 * (max(sorted_losses) - min(sorted_losses)) # Adjust this value relative to data range.
 
-        # # Format Y-axis as percentage (0% to 100%) — not log scale
-        # plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.0, decimals=0))
-        # plt.ylim(0, 1)
+        for p, value in percentiles.items():
+            prob = 1 - p / 100.0
+            plt.axvline(x=value, linestyle='--', color='gray', alpha=0.6)
+            plt.text(value - offset_x, prob, f"${value:,.0f}", verticalalignment='bottom',
+                    horizontalalignment='right', fontsize=9)
+            plt.scatter(value, prob, color='red', s=50) # s sets the size of the dot
 
-        # # Format X-axis in raw dollars (no scientific notation)
-        # plt.gca().xaxis.set_major_formatter(mtick.StrMethodFormatter('${x:,.0f}'))
 
-        # # Axis labels and titles
-        # plt.ylabel("Simulated Probability of Exceeding Loss")
-        # plt.xlabel("Annual Loss Exposure ($)")
-        # plt.title("Loss Exceedance Curve (LEC)")
-        # plt.grid(True, alpha=0.3)
-        # plt.legend()
+        # Format Y-axis as percentage (0% to 100%) — not log scale
+        plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.0, decimals=0))
+        plt.ylim(0, 1)
 
-        # # Export plot to base64
-        # buffer = BytesIO()
-        # plt.savefig(buffer, format='png', bbox_inches='tight')
-        # buffer.seek(0)
-        # image_png = buffer.getvalue()
-        # buffer.close()
-        # plt.close()
+        # Format X-axis in raw dollars (no scientific notation)
+        plt.gca().xaxis.set_major_formatter(mtick.StrMethodFormatter('${x:,.0f}'))
 
-        # graph = base64.b64encode(image_png).decode('utf-8')
-        # return {
-        #     'graph': graph,
-        #     'percentiles': {f'p{p}': float(value) for p, value in percentiles.items()}
-        # }
+        # Axis labels and titles
+        plt.ylabel("Simulated Probability of Exceeding Loss")
+        plt.xlabel("Annual Loss Exposure ($)")
+        plt.title("Loss Exceedance Curve (LEC)")
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+
+        # Export plot to base64
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', bbox_inches='tight')
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+        plt.close()
+
+        graph = base64.b64encode(image_png).decode('utf-8')
+        return {
+            'graph': graph,
+            'percentiles': {f'p{p}': float(value) for p, value in percentiles.items()}
+        }
 
 
 
