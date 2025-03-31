@@ -302,6 +302,28 @@ export const Summary: React.FC<SummaryProps> = ({ riskState, onBack, onRestart }
 
     return (
         <Box sx={{ width: '100%', mb: 4 }}>
+
+            <Box
+            sx={{
+                mb: 2,
+                p: 2,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'primary.main',
+                backgroundColor: '#f5faff',
+            }}
+            >
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}>
+                Final Summary
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'text.primary' }}>
+                Review your cybersecurity posture in this final summary. It consolidates your FAIR score, , simulation-based loss forecasts, and provides AI-backed recommendations along with a formalized risk statement.
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
+                Contact risk3sixty consultants for how you can implement these recommendations and further optimize your cybersecurity posture.
+            </Typography>
+
+            </Box>
             <Stack spacing={4}>
     
                 {/* Remediation Strategies Section */}

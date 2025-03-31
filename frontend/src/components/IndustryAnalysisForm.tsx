@@ -144,6 +144,28 @@ export const IndustryAnalysisForm: React.FC<Props> = ({
 
     return (
         <Box sx={{ width: '100%', mb: 4 }}>
+
+            <Box
+            sx={{
+                mb: 4,
+                p: 2,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'primary.main',
+                backgroundColor: '#f5faff',
+            }}
+            >
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}>
+                Industry Analysis Overview
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'text.primary' }}>
+                This section analyzes your organization’s industry trends to help contextualize cyber risk. You'll see insights from your sector, including breach costs, common attack vectors, and regional crime data.
+            </Typography>
+            </Box>
+
+
+
+
             {/* Top Section - Scenarios and Analysis side by side */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 {/* Left Side - Scenarios */}
