@@ -33,6 +33,30 @@ const US_STATES = [
     'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
 ];
 
+const INDUSTRIES = [
+    'Financial Services​',
+    'Healthcare​',
+    'Manufacturing​',
+    'Government​',
+    'Transportation and Logistics​',
+    'Retail​',
+    'Education​',
+    'Information Technology​',
+    'Energy​',
+    'Professional Services​',
+    'Entertainment​',
+    'Hospitality​',
+    'Telecommunications​',
+    'Real Estate​',
+    'Construction​',
+    'Legal Services​',
+    'Agriculture​',
+    'Mining​',
+    'Utilities​',
+    'Media​'
+];
+
+
 export const InitialInputForm: React.FC<Props> = ({ onSubmit, disabled = false, initialValues }) => {
     const [formData, setFormData] = useState<InitialInputFormData>({
         revenue: '',
@@ -111,7 +135,7 @@ export const InitialInputForm: React.FC<Props> = ({ onSubmit, disabled = false, 
                     />
                 </FormControl>
 
-                <FormControl required>
+                {/* <FormControl required>
                     <FormLabel>Industry</FormLabel>
                     <TextField
                         value={formData.industry}
@@ -121,7 +145,27 @@ export const InitialInputForm: React.FC<Props> = ({ onSubmit, disabled = false, 
                         required
                         disabled={disabled}
                     />
+                </FormControl> */}
+
+                <FormControl required>
+                    <FormLabel>Industry</FormLabel>
+                    <Select
+                        value={formData.industry}
+                        onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                        displayEmpty
+                        fullWidth
+                        required
+                        disabled={disabled}
+                    >
+                        <MenuItem value="" disabled>Select industry</MenuItem>
+                        {INDUSTRIES.map((industry) => (
+                            <MenuItem key={industry} value={industry}>
+                                {industry}
+                            </MenuItem>
+                        ))}
+                    </Select>
                 </FormControl>
+
 
                 <FormControl required>
                     <FormLabel>State</FormLabel>
