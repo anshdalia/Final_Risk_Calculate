@@ -98,6 +98,27 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
 
     return (
         <Box sx={{ width: '100%', mb: 4 }}>
+            <Box
+                sx={{
+                    mb: 4,
+                    p: 2,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'primary.main',
+                    backgroundColor: '#f5faff',
+                }}
+                >
+                <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}>
+                    Dynamic Questions
+                </Typography>
+                <Typography variant="body1" sx={{ color: 'text.primary' }}>
+                    This section helps refine your cybersecurity risk profile based on your highest-risk scenario
+                    and a short set of targeted questions. The left panel displays the scenario we're focusing on,
+                    while the right panel allows you to provide specific security context about your organization.
+                </Typography>
+                </Box>
+
+
             {/* Top Section - Scenarios and Questions side by side */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 {/* Left Side - Scenarios */}
@@ -129,6 +150,8 @@ export const DynamicQuestionsForm: React.FC<Props> = ({
                                 Risk Scenarios Assessment
                             </Typography>
                         </Box>
+
+
                         <Alert 
                             severity="warning" 
                             icon={false}

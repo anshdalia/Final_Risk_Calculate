@@ -12,6 +12,9 @@ import {
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { InitialInputFormData } from '../types';
+import { NumericFormat } from 'react-number-format';
+import { Typography } from '@mui/material';
+
 
 interface Props {
     onSubmit: (data: any) => void;
@@ -109,19 +112,59 @@ export const InitialInputForm: React.FC<Props> = ({ onSubmit, disabled = false, 
     };
 
     return (
-        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', maxWidth: 600, p: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+        <Box
+            component="form"
+            onSubmit={handleSubmit}
+            sx={{
+                width: '100%',
+                maxWidth: 600,
+                p: 2,
+                mx: 'auto', // ✅ This centers the form horizontally
+            }}
+            >
             <Stack spacing={3}>
+                <Box
+                        sx={{
+                            mb: 2,
+                            p: 2,
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'primary.main',
+                            backgroundColor: '#f5faff',
+                        }}
+                        >
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}>
+                            Initial Assessment Overview
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: 'text.primary' }}>
+                            Welcome! Please provide basic organizational information below and detail any inherent cybersecurity risks you believe your organization faces.
+                            These inputs will be used to customize your cybersecurity
+                            risk assessment and ensure it reflects your unique business profile.
+                        </Typography>
+                        </Box>
+
+
                 <FormControl required>
                     <FormLabel>Annual Revenue (USD)</FormLabel>
-                    <TextField
+                    <NumericFormat
                         value={formData.revenue}
-                        onChange={(e) => setFormData({ ...formData, revenue: e.target.value })}
-                        placeholder="Enter annual revenue"
+                        onValueChange={(values) => {
+                            const { value } = values;
+                            setFormData({ ...formData, revenue: value });
+                        }}
+                        thousandSeparator
+                        prefix="$"
+                        customInput={TextField}
+                        placeholder="e.g. $1,000,000"
                         fullWidth
                         required
                         disabled={disabled}
                     />
                 </FormControl>
+
+
+
 
                 <FormControl required>
                     <FormLabel>Number of Employees</FormLabel>
@@ -221,6 +264,7 @@ export const InitialInputForm: React.FC<Props> = ({ onSubmit, disabled = false, 
                     {toast.message}
                 </Alert>
             </Snackbar>
+        </Box>
         </Box>
     );
 }; 
