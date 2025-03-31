@@ -21,6 +21,7 @@ import { Summary } from './components/Summary';
 import { api } from './api';
 import { RiskState } from './types';
 
+
 const steps = [
     'Initial Input',
     'Dynamic Questions',
@@ -115,9 +116,17 @@ function App() {
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
             <Stack spacing={4}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Typography variant="h3" component="h1">
                     Cybersecurity Risk Assessment
                 </Typography>
+                <Box component="img"
+                    src="/logo.png"
+                    alt="Risk3Sixty Logo"
+                    sx={{ height: 60 }}
+                />
+            </Stack>
+
                 
                 <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
                     {steps.map((step, index) => (
